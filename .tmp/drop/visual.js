@@ -9998,7 +9998,7 @@ var powerbi;
                     function VisualSettings() {
                         var _this = _super !== null && _super.apply(this, arguments) || this;
                         _this.textSettings = new textSettings();
-                        _this.colorSettings = new colorSettings;
+                        _this.colorSettings = new colorSettings();
                         _this.targetLineSettings = new targetLineSettings();
                         _this.outerBarSettings = new outerBarSettings();
                         return _this;
@@ -10281,9 +10281,6 @@ var powerbi;
                                     }
                                 }
                             }
-                            if (this.settings.textSettings.showValueText) {
-                                this.ActualTxtElement.style("fill", statusBarColor);
-                            }
                             //Let's derive some of the sizing
                             var svgWidth = parseInt(this.svg.style("width"));
                             var svgHeight = parseInt(this.svg.style("height"));
@@ -10298,6 +10295,9 @@ var powerbi;
                                     .style("font-size", this.settings.textSettings.fontSize + "px")
                                     .style("font-family", "'Segoe UI', 'wf_segoe-ui_normal', helvetica, arial, sans-serif;")
                                     .style("fill", statusBarColor);
+                            }
+                            if (this.settings.textSettings.showValueText) {
+                                this.ActualTxtElement.style("fill", statusBarColor);
                             }
                             var yGoalValueTxt = null;
                             if (data.max != null && this.settings.textSettings.showMaxText == true) {
@@ -10402,9 +10402,10 @@ var powerbi;
                                 var gapTargetField = data.gapBetweenValueAndTarget();
                                 gapTargetField.displayUnits = useDisplayUnits ? settings.textSettings.displayUnits : 0;
                                 gapTargetField.value = settings.textSettings.repPositiveGapAsNegativeNumber == true ? gapTargetField.value * -1 : gapTargetField.value;
+                                formattedGapValueTarget = gapTargetField.toString(true, useDisplayUnits);
                                 if (settings.textSettings.showPercentagesOnGaps == true) {
                                     var formattedPercent = percentageFormatter.format(Math.abs(gapTargetField.value) / data.target.value);
-                                    formattedGapValueTarget = gapTargetField.toString(true, useDisplayUnits) + "(" + formattedPercent + ")";
+                                    formattedGapValueTarget += "(" + formattedPercent + ")";
                                 }
                                 tooltipDataFieldList.push({
                                     displayName: gapTargetField.displayName,
@@ -10416,8 +10417,11 @@ var powerbi;
                                 var gapMaxField = data.gapBetweenValueAndMax();
                                 gapMaxField.displayUnits = useDisplayUnits ? settings.textSettings.displayUnits : 0;
                                 gapMaxField.value = settings.textSettings.repPositiveGapAsNegativeNumber == true ? gapMaxField.value * -1 : gapMaxField.value;
-                                var formattedPercent = percentageFormatter.format(Math.abs(gapMaxField.value) / data.max.value);
-                                formattedGapValueMax = gapMaxField.toString(true, useDisplayUnits) + "(" + formattedPercent + ")";
+                                formattedGapValueMax = gapMaxField.toString(true, useDisplayUnits);
+                                if (settings.textSettings.showPercentagesOnGaps == true) {
+                                    var formattedPercent = percentageFormatter.format(Math.abs(gapMaxField.value) / data.max.value);
+                                    formattedGapValueMax += "(" + formattedPercent + ")";
+                                }
                                 tooltipDataFieldList.push({
                                     displayName: gapMaxField.displayName,
                                     value: formattedGapValueMax

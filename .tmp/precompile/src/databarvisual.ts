@@ -294,10 +294,6 @@ module powerbi.extensibility.visual.databarKPIB8060E2B144244C5A38807466893C9F5  
                     }
                 }
 
-                if (this.settings.textSettings.showValueText) {
-                    this.ActualTxtElement.style("fill",statusBarColor)
-                }
-
                 //Let's derive some of the sizing
                 var svgWidth = parseInt(this.svg.style("width"))
                 var svgHeight = parseInt(this.svg.style("height"))
@@ -314,7 +310,11 @@ module powerbi.extensibility.visual.databarKPIB8060E2B144244C5A38807466893C9F5  
                                         .style("font-size",this.settings.textSettings.fontSize + "px")
                                         .style("font-family","'Segoe UI', 'wf_segoe-ui_normal', helvetica, arial, sans-serif;")
                                         .style("fill",statusBarColor)
-                }        
+                }  
+
+                if (this.settings.textSettings.showValueText) {
+                    this.ActualTxtElement.style("fill",statusBarColor)
+                }      
 
                 var yGoalValueTxt = null;
                 if (data.max != null && this.settings.textSettings.showMaxText == true) {
@@ -450,9 +450,11 @@ module powerbi.extensibility.visual.databarKPIB8060E2B144244C5A38807466893C9F5  
                     
                     gapTargetField.value = settings.textSettings.repPositiveGapAsNegativeNumber == true ? gapTargetField.value * -1 : gapTargetField.value;
 
+                    formattedGapValueTarget = gapTargetField.toString(true, useDisplayUnits);
+
                     if (settings.textSettings.showPercentagesOnGaps == true) {
                         var formattedPercent = percentageFormatter.format(Math.abs(gapTargetField.value) / data.target.value)
-                        formattedGapValueTarget = gapTargetField.toString(true, useDisplayUnits) + "(" + formattedPercent + ")";
+                        formattedGapValueTarget += "(" + formattedPercent + ")";
                     }
 
                     tooltipDataFieldList.push(
@@ -472,8 +474,12 @@ module powerbi.extensibility.visual.databarKPIB8060E2B144244C5A38807466893C9F5  
 
                     gapMaxField.value = settings.textSettings.repPositiveGapAsNegativeNumber == true ? gapMaxField.value * -1 : gapMaxField.value;
 
-                    var formattedPercent = percentageFormatter.format(Math.abs(gapMaxField.value) / data.max.value)
-                        formattedGapValueMax = gapMaxField.toString(true, useDisplayUnits) + "(" + formattedPercent + ")";
+                    formattedGapValueMax = gapMaxField.toString(true, useDisplayUnits);
+
+                    if (settings.textSettings.showPercentagesOnGaps == true) {
+                        var formattedPercent = percentageFormatter.format(Math.abs(gapMaxField.value) / data.max.value)
+                        formattedGapValueMax += "(" + formattedPercent + ")";
+                    }
 
                     tooltipDataFieldList.push(
                         {

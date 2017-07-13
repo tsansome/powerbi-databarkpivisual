@@ -30,7 +30,7 @@ module powerbi.extensibility.visual.databarKPIB8060E2B144244C5A38807466893C9F5  
 
     export class VisualSettings extends DataViewObjectsParser {
       public textSettings: textSettings = new textSettings();
-      public colorSettings: colorSettings = new colorSettings;
+      public colorSettings: colorSettings = new colorSettings();
       public targetLineSettings: targetLineSettings = new targetLineSettings();
       public outerBarSettings: outerBarSettings = new outerBarSettings();
     }
