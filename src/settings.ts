@@ -49,6 +49,7 @@ module powerbi.extensibility.visual {
     }
 
     export class colorSettings {
+      public defaultColorNoTarget: string = "#000000";      
       public lessThanColor: string = "#f44336";
       public equalToColor: string = "#4caf50";
       public greaterThanColor: string = "#4caf50";
@@ -61,6 +62,7 @@ module powerbi.extensibility.visual {
     }
 
     export class outerBarSettings {
+      public fillWhenNoTarget: boolean = true;
       public fill: string = "white";
       public outlineColor: string = "grey";
     }

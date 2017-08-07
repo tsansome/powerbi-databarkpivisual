@@ -97,6 +97,16 @@
         "colorSettings": {
             "displayName": "Colors - Indicators",
             "properties": {
+                "defaultColorNoTarget": {
+                    "displayName": "Default Color for No Target",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color":true
+                            }
+                        }
+                    }
+                },                
                 "lessThanColor": {
                     "displayName": "Less than",
                     "type": {
@@ -168,6 +178,12 @@
         "outerBarSettings": {
             "displayName": "Outer Bar",
             "properties": {
+                "fillWhenNoTarget": {
+                    "displayName": "Fill 100% when no target",
+                    "type": {
+                        "bool": true
+                    }
+                },
                 "fill": {
                     "displayName": "Fill",
                     "type": {
@@ -177,7 +193,7 @@
                             }
                         }
                     }
-                },
+                },                
                 "outlineColor" : {
                     "displayName": "Outline color",
                     "type": {

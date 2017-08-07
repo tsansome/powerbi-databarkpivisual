@@ -10024,6 +10024,7 @@ var powerbi;
                 databarKPIB8060E2B144244C5A38807466893C9F5.textSettings = textSettings;
                 var colorSettings = (function () {
                     function colorSettings() {
+                        this.defaultColorNoTarget = "#000000";
                         this.lessThanColor = "#f44336";
                         this.equalToColor = "#4caf50";
                         this.greaterThanColor = "#4caf50";
@@ -10042,6 +10043,7 @@ var powerbi;
                 databarKPIB8060E2B144244C5A38807466893C9F5.targetLineSettings = targetLineSettings;
                 var outerBarSettings = (function () {
                     function outerBarSettings() {
+                        this.fillWhenNoTarget = true;
                         this.fill = "white";
                         this.outlineColor = "grey";
                     }
@@ -10175,14 +10177,22 @@ var powerbi;
                     //collect the data
                     var data = new BarData();
                     var columnsRef = options.dataViews[0].table.columns;
-                    data.value = new Field(Number(values[valueArray["value"]].toString()), columnsRef[valueArray["value"]].format, columnsRef[valueArray["value"]].displayName);
-                    if (valueArray["target"] != undefined) {
+                    var value = null;
+                    if (values[valueArray["value"]] == null) {
+                        value = 0;
+                    }
+                    else {
+                        var value_string = values[valueArray["value"]].toString();
+                        value = Number(value_string);
+                    }
+                    data.value = new Field(value, columnsRef[valueArray["value"]].format, columnsRef[valueArray["value"]].displayName);
+                    if (valueArray["target"] != undefined && values[valueArray["target"]] != null) {
                         data.target = new Field(Number(values[valueArray["target"]].toString()), columnsRef[valueArray["target"]].format, columnsRef[valueArray["target"]].displayName);
                     }
                     else {
                         data.target = null;
                     }
-                    if (valueArray["max"] != undefined) {
+                    if (valueArray["max"] != undefined && values[valueArray["max"]] != null) {
                         data.max = new Field(Number(values[valueArray["max"]].toString()), columnsRef[valueArray["max"]].format, columnsRef[valueArray["max"]].displayName);
                     }
                     else {
@@ -10281,6 +10291,9 @@ var powerbi;
                                     }
                                 }
                             }
+                            if (data.target == null && data.max == null) {
+                                statusBarColor = this.settings.colorSettings.defaultColorNoTarget;
+                            }
                             //Let's derive some of the sizing
                             var svgWidth = parseInt(this.svg.style("width"));
                             var svgHeight = parseInt(this.svg.style("height"));
@@ -10325,7 +10338,7 @@ var powerbi;
                             var heightOfBar = remainingRoom - (marginAroundBar * 2);
                             var selectionManager = this.selectionManager;
                             if (data.target == null && data.max == null) {
-                                //just draw the main bar as we just want to show the value
+                                //just draw the main bar as we just want to show the value     
                                 this.mainBarElement.selectAll(".outerBar")
                                     .data([data])
                                     .enter()
@@ -10350,10 +10363,17 @@ var powerbi;
                                     .attr("width", percentageDone + "%");
                                 this.tooltipServiceWrapper.addTooltip(this.percentageBarElement, function (tooltipEvent) { return databarvisual.getToolTipDataForBar(tooltipEvent.data, _this.settings); }, function (tooltipEvent) { return null; });
                             }
+                            var mainBarFill = null;
+                            if (this.settings.outerBarSettings.fillWhenNoTarget) {
+                                mainBarFill = this.settings.colorSettings.defaultColorNoTarget;
+                            }
+                            else {
+                                mainBarFill = this.settings.outerBarSettings.fill;
+                            }
                             //add the extra styling to the main outer bar
                             this.mainBarElement.select(".mabar")
                                 .attr("width", "100%")
-                                .attr("fill", this.settings.outerBarSettings.fill)
+                                .attr("fill", mainBarFill)
                                 .attr("stroke", this.settings.outerBarSettings.outlineColor)
                                 .attr("height", heightOfBar)
                                 .attr("y", marginAroundBar)
@@ -10492,8 +10512,8 @@ var powerbi;
     (function (visuals) {
         var plugins;
         (function (plugins) {
-            plugins.databarKPIB8060E2B144244C5A38807466893C9F5 = {
-                name: 'databarKPIB8060E2B144244C5A38807466893C9F5',
+            plugins.databarKPIB8060E2B144244C5A38807466893C9F5_DEBUG = {
+                name: 'databarKPIB8060E2B144244C5A38807466893C9F5_DEBUG',
                 displayName: 'Data bar KPI',
                 class: 'databarvisual',
                 version: '1.0.0',

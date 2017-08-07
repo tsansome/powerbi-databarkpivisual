@@ -140,12 +140,19 @@ module powerbi.extensibility.visual.databarKPIB8060E2B144244C5A38807466893C9F5  
         var data = new BarData();
 
         var columnsRef = options.dataViews[0].table.columns;
-
-        data.value = new Field(Number(values[valueArray["value"]].toString()),
+        
+        var value = null;
+        if (values[valueArray["value"]] == null) {
+            value = 0;
+        } else {
+            var value_string = values[valueArray["value"]].toString()
+            value = Number(value_string)
+        }
+        data.value = new Field(value,
                             columnsRef[valueArray["value"]].format,
                             columnsRef[valueArray["value"]].displayName);
         
-        if (valueArray["target"] != undefined) {
+        if (valueArray["target"] != undefined && values[valueArray["target"]] != null) {
             data.target = new Field(Number(values[valueArray["target"]].toString()),
                                 columnsRef[valueArray["target"]].format,
                                 columnsRef[valueArray["target"]].displayName); 
@@ -153,7 +160,7 @@ module powerbi.extensibility.visual.databarKPIB8060E2B144244C5A38807466893C9F5  
             data.target = null;
         }
 
-        if (valueArray["max"] != undefined) {
+        if (valueArray["max"] != undefined && values[valueArray["max"]] != null) {
             data.max = new Field(Number(values[valueArray["max"]].toString()),
                                 columnsRef[valueArray["max"]].format,
                                 columnsRef[valueArray["max"]].displayName);
@@ -274,7 +281,7 @@ module powerbi.extensibility.visual.databarKPIB8060E2B144244C5A38807466893C9F5  
             
                 //we need to derive the status bar color
                 var statusBarColor = this.settings.colorSettings.equalToColor;
-
+                
                 if (data.target != null) {
                     data.target.displayUnits = tS.displayUnits;
                     if (data.value.value > data.target.value) {
@@ -292,6 +299,10 @@ module powerbi.extensibility.visual.databarKPIB8060E2B144244C5A38807466893C9F5  
                             statusBarColor = this.settings.colorSettings.lessThanColor;
                         }
                     }
+                }
+
+                if (data.target == null && data.max == null) {
+                    statusBarColor = this.settings.colorSettings.defaultColorNoTarget;
                 }
 
                 //Let's derive some of the sizing
@@ -349,13 +360,12 @@ module powerbi.extensibility.visual.databarKPIB8060E2B144244C5A38807466893C9F5  
                 let selectionManager = this.selectionManager; 
 
                 if (data.target == null && data.max == null) {
-                    //just draw the main bar as we just want to show the value
-
+                    //just draw the main bar as we just want to show the value     
                     this.mainBarElement .selectAll(".outerBar")
                                         .data([data])
                                         .enter()
                                         .append("rect")
-                                        .classed("mabar",true)   
+                                        .classed("mabar",true)
 
                     this.tooltipServiceWrapper.addTooltip(
                     this.mainBarElement,
@@ -388,10 +398,17 @@ module powerbi.extensibility.visual.databarKPIB8060E2B144244C5A38807466893C9F5  
                         
                 }
                 
+                var mainBarFill = null;
+                if (this.settings.outerBarSettings.fillWhenNoTarget) {
+                    mainBarFill = this.settings.colorSettings.defaultColorNoTarget;
+                } else {
+                    mainBarFill = this.settings.outerBarSettings.fill;
+                }
+
                 //add the extra styling to the main outer bar
                 this.mainBarElement     .select(".mabar")
                                         .attr("width","100%")
-                                        .attr("fill",this.settings.outerBarSettings.fill)
+                                        .attr("fill",mainBarFill)
                                         .attr("stroke",this.settings.outerBarSettings.outlineColor)
                                         .attr("height",heightOfBar)
                                         .attr("y",marginAroundBar)
