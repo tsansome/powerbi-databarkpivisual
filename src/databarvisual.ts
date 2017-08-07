@@ -51,6 +51,10 @@ module powerbi.extensibility.visual {
         }
 
         public toString(withFormatting?: boolean, withDisplayUnits?: boolean) {
+            if(this.value == null) {
+                return "Blank"
+            }
+            
             var displayUnits = withDisplayUnits ? this.displayUnits : 0;            
             if (withFormatting) {
                 return ValueFormatter.create({ format: this.format, value: displayUnits })
@@ -178,12 +182,23 @@ module powerbi.extensibility.visual {
         // now process the tooltips
         for (var i = 0; i < valueArray["tooltips"].length; i++) {
             var toolTipIndex = valueArray["tooltips"][i];
-            var tooltipF = new Field(
-                Number(values[toolTipIndex].toString()),
-                columnsRef[toolTipIndex].format,
-                columnsRef[toolTipIndex].displayName,
-                0
-            );
+            if (values[toolTipIndex] == null) {
+                var tooltipF = new Field(
+                    null,
+                    columnsRef[toolTipIndex].format,
+                    columnsRef[toolTipIndex].displayName,
+                    0
+                );
+            } 
+            else {
+                var tooltipF = new Field(
+                    Number(values[toolTipIndex].toString()),
+                    columnsRef[toolTipIndex].format,
+                    columnsRef[toolTipIndex].displayName,
+                    0
+                );
+            }
+            
             data.tooltipsData.push(tooltipF);
         }
 
