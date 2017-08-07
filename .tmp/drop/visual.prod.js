@@ -10364,7 +10364,7 @@ var powerbi;
                                 this.tooltipServiceWrapper.addTooltip(this.percentageBarElement, function (tooltipEvent) { return databarvisual.getToolTipDataForBar(tooltipEvent.data, _this.settings); }, function (tooltipEvent) { return null; });
                             }
                             var mainBarFill = null;
-                            if (this.settings.outerBarSettings.fillWhenNoTarget) {
+                            if ((data.target == null && data.max == null) && this.settings.outerBarSettings.fillWhenNoTarget) {
                                 mainBarFill = this.settings.colorSettings.defaultColorNoTarget;
                             }
                             else {

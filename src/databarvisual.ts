@@ -399,7 +399,7 @@ module powerbi.extensibility.visual {
                 }
                 
                 var mainBarFill = null;
-                if (this.settings.outerBarSettings.fillWhenNoTarget) {
+                if ((data.target == null && data.max == null) && this.settings.outerBarSettings.fillWhenNoTarget) {
                     mainBarFill = this.settings.colorSettings.defaultColorNoTarget;
                 } else {
                     mainBarFill = this.settings.outerBarSettings.fill;
@@ -414,7 +414,6 @@ module powerbi.extensibility.visual {
                                         .attr("y",marginAroundBar)
                                         .attr("x", 0)
 
-                
                 // now if a target was specified we need to draw the dashed line
                 if (data.target != null) {
                     //determine where the dashed line should end
