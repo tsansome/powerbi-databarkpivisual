@@ -10018,13 +10018,15 @@ var powerbi;
                         this.repPositiveGapAsNegativeNumber = true;
                         this.showPercentagesOnGaps = true;
                         this.ignoreFormattingForTooltips = false;
+                        this.treatBlanksAsZeros = false;
                     }
                     return textSettings;
                 }());
                 databarKPIB8060E2B144244C5A38807466893C9F5.textSettings = textSettings;
                 var colorSettings = (function () {
                     function colorSettings() {
-                        this.defaultColorNoTarget = "#000000";
+                        this.defaultColorNoTargetText = "#00000";
+                        this.defaultColorNoTargetFill = "#000000";
                         this.lessThanColor = "#f44336";
                         this.equalToColor = "#4caf50";
                         this.greaterThanColor = "#4caf50";
@@ -10103,22 +10105,28 @@ var powerbi;
                         this.displayName = displayName;
                         this.displayUnits = displayUnits ? displayUnits : 0;
                     }
-                    Field.prototype.toString = function (withFormatting, withDisplayUnits) {
-                        if (this.value == null) {
-                            return "Blank";
-                        }
+                    Field.prototype.toString = function (withFormatting, withDisplayUnits, overrideBlankWithNumber) {
+                        var valueToFormat = this.value;
                         var displayUnits = withDisplayUnits ? this.displayUnits : 0;
+                        if (valueToFormat == null) {
+                            if (overrideBlankWithNumber != null) {
+                                valueToFormat = overrideBlankWithNumber;
+                            }
+                            else {
+                                return "blank";
+                            }
+                        }
                         if (withFormatting) {
                             return ValueFormatter.create({ format: this.format, value: displayUnits })
-                                .format(this.value);
+                                .format(valueToFormat);
                         }
                         else {
                             if (withDisplayUnits) {
                                 return ValueFormatter.create({ value: displayUnits })
-                                    .format(this.value);
+                                    .format(valueToFormat);
                             }
                             else {
-                                return this.value.toString();
+                                return valueToFormat.toString();
                             }
                         }
                     };
@@ -10181,10 +10189,7 @@ var powerbi;
                     var data = new BarData();
                     var columnsRef = options.dataViews[0].table.columns;
                     var value = null;
-                    if (values[valueArray["value"]] == null) {
-                        value = 0;
-                    }
-                    else {
+                    if (values[valueArray["value"]] != null) {
                         var value_string = values[valueArray["value"]].toString();
                         value = Number(value_string);
                     }
@@ -10240,6 +10245,12 @@ var powerbi;
                         }
                         else {
                             var data = transform.data;
+                            if (this.settings.textSettings.treatBlanksAsZeros == true) {
+                                this.overrideBlanksWithValue = 0;
+                            }
+                            else {
+                                this.overrideBlanksWithValue = null;
+                            }
                             //add the display units from settings
                             var tS = this.settings.textSettings;
                             data.value.displayUnits = tS.displayUnitsForValue != 0 ? tS.displayUnitsForValue : tS.displayUnits;
@@ -10280,27 +10291,33 @@ var powerbi;
                             }
                             //we need to derive the status bar color
                             var statusBarColor = this.settings.colorSettings.equalToColor;
+                            var textColor = this.settings.colorSettings.equalToColor;
                             if (data.target != null) {
                                 data.target.displayUnits = tS.displayUnits;
                                 if (data.value.value > data.target.value) {
                                     statusBarColor = this.settings.colorSettings.greaterThanColor;
+                                    textColor = this.settings.colorSettings.greaterThanColor;
                                 }
                                 else if (data.value.value < data.target.value) {
                                     statusBarColor = this.settings.colorSettings.lessThanColor;
+                                    textColor = this.settings.colorSettings.lessThanColor;
                                 }
                             }
                             else {
                                 if (data.max != null) {
                                     if (data.value.value > data.max.value) {
                                         statusBarColor = this.settings.colorSettings.greaterThanColor;
+                                        textColor = this.settings.colorSettings.greaterThanColor;
                                     }
                                     else if (data.value.value < data.max.value) {
                                         statusBarColor = this.settings.colorSettings.lessThanColor;
+                                        textColor = this.settings.colorSettings.lessThanColor;
                                     }
                                 }
                             }
                             if (data.target == null && data.max == null) {
-                                statusBarColor = this.settings.colorSettings.defaultColorNoTarget;
+                                statusBarColor = this.settings.colorSettings.defaultColorNoTargetFill;
+                                textColor = this.settings.colorSettings.defaultColorNoTargetText;
                             }
                             //Let's derive some of the sizing
                             var svgWidth = parseInt(this.svg.style("width"));
@@ -10312,10 +10329,10 @@ var powerbi;
                                 this.ActualTxtElement.append("text")
                                     .attr("y", yActText)
                                     .classed("valueTxt", true)
-                                    .text(data.value.toString(true, true))
+                                    .text(data.value.toString(true, true, this.overrideBlanksWithValue))
                                     .style("font-size", this.settings.textSettings.fontSize + "px")
                                     .style("font-family", "'Segoe UI', 'wf_segoe-ui_normal', helvetica, arial, sans-serif;")
-                                    .style("fill", statusBarColor);
+                                    .style("fill", textColor);
                             }
                             if (this.settings.textSettings.showValueText) {
                                 this.ActualTxtElement.style("fill", statusBarColor);
@@ -10325,7 +10342,7 @@ var powerbi;
                                 yGoalValueTxt = svgHeight - 2; //-2 for padding
                                 //get the formatted target string
                                 var tmp = this.GoalTxtElement.append("text")
-                                    .text(data.max.toString(true, true))
+                                    .text(data.max.toString(true, true, this.overrideBlanksWithValue))
                                     .classed("goalTxt", true)
                                     .attr("y", yGoalValueTxt)
                                     .style("font-size", this.settings.textSettings.fontSize + "px")
@@ -10373,7 +10390,7 @@ var powerbi;
                             }
                             var mainBarFill = null;
                             if ((data.target == null && data.max == null) && this.settings.outerBarSettings.fillWhenNoTarget) {
-                                mainBarFill = this.settings.colorSettings.defaultColorNoTarget;
+                                mainBarFill = this.settings.colorSettings.defaultColorNoTargetFill;
                             }
                             else {
                                 mainBarFill = this.settings.outerBarSettings.fill;
@@ -10413,6 +10430,7 @@ var powerbi;
                     databarvisual.getToolTipDataForBar = function (dataNonCasted, settings) {
                         var useDisplayUnits = !settings.textSettings.ignoreFormattingForTooltips;
                         var data = dataNonCasted;
+                        var overrideBlanksWithValue = settings.textSettings.treatBlanksAsZeros == true ? 0 : null;
                         if (data != null) {
                             var toolTipDataBegin = [data.value];
                             if (data.target != null) {
@@ -10422,7 +10440,7 @@ var powerbi;
                                 toolTipDataBegin.push(data.max);
                             }
                             var tooltipDataFieldList = toolTipDataBegin.map(function (f) {
-                                return { displayName: f.displayName, value: f.toString(true, useDisplayUnits) };
+                                return { displayName: f.displayName, value: f.toString(true, useDisplayUnits, overrideBlanksWithValue) };
                             });
                             var percentageFormatter = ValueFormatter.create({ format: "0.00 %;-0.00 %;0.00 %", value: 1, allowFormatBeautification: true });
                             if (data.target != null) {
@@ -10430,7 +10448,7 @@ var powerbi;
                                 var gapTargetField = data.gapBetweenValueAndTarget();
                                 gapTargetField.displayUnits = useDisplayUnits ? settings.textSettings.displayUnits : 0;
                                 gapTargetField.value = settings.textSettings.repPositiveGapAsNegativeNumber == true ? gapTargetField.value * -1 : gapTargetField.value;
-                                formattedGapValueTarget = gapTargetField.toString(true, useDisplayUnits);
+                                formattedGapValueTarget = gapTargetField.toString(true, useDisplayUnits, overrideBlanksWithValue);
                                 if (settings.textSettings.showPercentagesOnGaps == true) {
                                     var formattedPercent = percentageFormatter.format(Math.abs(gapTargetField.value) / data.target.value);
                                     formattedGapValueTarget += "(" + formattedPercent + ")";
@@ -10445,7 +10463,7 @@ var powerbi;
                                 var gapMaxField = data.gapBetweenValueAndMax();
                                 gapMaxField.displayUnits = useDisplayUnits ? settings.textSettings.displayUnits : 0;
                                 gapMaxField.value = settings.textSettings.repPositiveGapAsNegativeNumber == true ? gapMaxField.value * -1 : gapMaxField.value;
-                                formattedGapValueMax = gapMaxField.toString(true, useDisplayUnits);
+                                formattedGapValueMax = gapMaxField.toString(true, useDisplayUnits, overrideBlanksWithValue);
                                 if (settings.textSettings.showPercentagesOnGaps == true) {
                                     var formattedPercent = percentageFormatter.format(Math.abs(gapMaxField.value) / data.max.value);
                                     formattedGapValueMax += "(" + formattedPercent + ")";
@@ -10460,7 +10478,7 @@ var powerbi;
                                 var ttData = data.tooltipsData[i];
                                 tooltipDataFieldList.push({
                                     displayName: ttData.displayName,
-                                    value: ttData.toString(true, useDisplayUnits)
+                                    value: ttData.toString(true, useDisplayUnits, overrideBlanksWithValue)
                                 });
                             }
                             //now return the tooltip data

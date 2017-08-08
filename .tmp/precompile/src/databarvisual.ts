@@ -50,22 +50,28 @@ module powerbi.extensibility.visual.databarKPIB8060E2B144244C5A38807466893C9F5  
             this.displayUnits = displayUnits ? displayUnits : 0;
         }
 
-        public toString(withFormatting?: boolean, withDisplayUnits?: boolean) {
-            if(this.value == null) {
-                return "Blank"
-            }
-            
-            var displayUnits = withDisplayUnits ? this.displayUnits : 0;            
+        public toString(withFormatting?: boolean, withDisplayUnits?: boolean, overrideBlankWithNumber?: number) {
+            var valueToFormat = this.value;
+            var displayUnits = withDisplayUnits ? this.displayUnits : 0; 
+
+            if(valueToFormat == null) {
+                if (overrideBlankWithNumber != null) {
+                    valueToFormat = overrideBlankWithNumber;
+                } else {
+                    return "blank"   
+                }                
+            }            
+                       
             if (withFormatting) {
                 return ValueFormatter.create({ format: this.format, value: displayUnits })
-                                     .format(this.value)    
+                                     .format(valueToFormat)    
             }
             else {
                 if (withDisplayUnits) {
                     return ValueFormatter.create({ value: displayUnits })
-                                     .format(this.value)    
+                                     .format(valueToFormat)    
                 } else {    
-                    return this.value.toString();
+                    return valueToFormat.toString();
                 }                
             }
         }
@@ -146,9 +152,7 @@ module powerbi.extensibility.visual.databarKPIB8060E2B144244C5A38807466893C9F5  
         var columnsRef = options.dataViews[0].table.columns;
         
         var value = null;
-        if (values[valueArray["value"]] == null) {
-            value = 0;
-        } else {
+        if (values[valueArray["value"]] != null) {
             var value_string = values[valueArray["value"]].toString()
             value = Number(value_string)
         }
@@ -212,6 +216,8 @@ module powerbi.extensibility.visual.databarKPIB8060E2B144244C5A38807466893C9F5  
         private target: HTMLElement;
         private settings: VisualSettings;
 
+        private overrideBlanksWithValue: number;
+
         //svg elements
         private host: IVisualHost;
         private percentageBarElement;
@@ -254,6 +260,12 @@ module powerbi.extensibility.visual.databarKPIB8060E2B144244C5A38807466893C9F5  
             else {  
                 var data = transform.data;    
                 
+                if (this.settings.textSettings.treatBlanksAsZeros == true) {
+                    this.overrideBlanksWithValue = 0;
+                } else {
+                    this.overrideBlanksWithValue = null;
+                }
+
                 //add the display units from settings
                 var tS = this.settings.textSettings;
                 data.value.displayUnits = tS.displayUnitsForValue != 0 ? tS.displayUnitsForValue : tS.displayUnits;
@@ -296,28 +308,34 @@ module powerbi.extensibility.visual.databarKPIB8060E2B144244C5A38807466893C9F5  
             
                 //we need to derive the status bar color
                 var statusBarColor = this.settings.colorSettings.equalToColor;
+                var textColor = this.settings.colorSettings.equalToColor;
                 
                 if (data.target != null) {
                     data.target.displayUnits = tS.displayUnits;
                     if (data.value.value > data.target.value) {
-                        statusBarColor = this.settings.colorSettings.greaterThanColor
+                        statusBarColor = this.settings.colorSettings.greaterThanColor;
+                        textColor = this.settings.colorSettings.greaterThanColor;
                     } 
                     else if (data.value.value < data.target.value) {
                         statusBarColor = this.settings.colorSettings.lessThanColor;
+                        textColor = this.settings.colorSettings.lessThanColor;
                     }
                 } else {
                     if (data.max != null) {
                         if (data.value.value > data.max.value) {
                             statusBarColor = this.settings.colorSettings.greaterThanColor;
+                            textColor = this.settings.colorSettings.greaterThanColor;
                         }
                         else if (data.value.value < data.max.value) {
                             statusBarColor = this.settings.colorSettings.lessThanColor;
+                            textColor = this.settings.colorSettings.lessThanColor;
                         }
                     }
                 }
 
                 if (data.target == null && data.max == null) {
-                    statusBarColor = this.settings.colorSettings.defaultColorNoTarget;
+                    statusBarColor = this.settings.colorSettings.defaultColorNoTargetFill;
+                    textColor = this.settings.colorSettings.defaultColorNoTargetText;
                 }
 
                 //Let's derive some of the sizing
@@ -332,10 +350,10 @@ module powerbi.extensibility.visual.databarKPIB8060E2B144244C5A38807466893C9F5  
                     this.ActualTxtElement.append("text")
                                         .attr("y", yActText)
                                         .classed("valueTxt",true)
-                                        .text(data.value.toString(true,true))
+                                        .text(data.value.toString(true, true, this.overrideBlanksWithValue))
                                         .style("font-size",this.settings.textSettings.fontSize + "px")
                                         .style("font-family","'Segoe UI', 'wf_segoe-ui_normal', helvetica, arial, sans-serif;")
-                                        .style("fill",statusBarColor)
+                                        .style("fill",textColor)
                 }  
 
                 if (this.settings.textSettings.showValueText) {
@@ -348,7 +366,7 @@ module powerbi.extensibility.visual.databarKPIB8060E2B144244C5A38807466893C9F5  
 
                     //get the formatted target string
                     var tmp = this.GoalTxtElement.append("text")
-                                    .text(data.max.toString(true,true))
+                                    .text(data.max.toString(true, true, this.overrideBlanksWithValue))
                                     .classed("goalTxt",true)
                                     .attr("y", yGoalValueTxt)
                                     .style("font-size",this.settings.textSettings.fontSize + "px")
@@ -415,7 +433,7 @@ module powerbi.extensibility.visual.databarKPIB8060E2B144244C5A38807466893C9F5  
                 
                 var mainBarFill = null;
                 if ((data.target == null && data.max == null) && this.settings.outerBarSettings.fillWhenNoTarget) {
-                    mainBarFill = this.settings.colorSettings.defaultColorNoTarget;
+                    mainBarFill = this.settings.colorSettings.defaultColorNoTargetFill;
                 } else {
                     mainBarFill = this.settings.outerBarSettings.fill;
                 }
@@ -459,6 +477,7 @@ module powerbi.extensibility.visual.databarKPIB8060E2B144244C5A38807466893C9F5  
         public static getToolTipDataForBar(dataNonCasted: any, settings :VisualSettings) : VisualTooltipDataItem[] {
             var useDisplayUnits = !settings.textSettings.ignoreFormattingForTooltips;
             var data:BarData = dataNonCasted;
+            var overrideBlanksWithValue = settings.textSettings.treatBlanksAsZeros == true ? 0 : null;
 
             if (data != null) {
 
@@ -468,7 +487,7 @@ module powerbi.extensibility.visual.databarKPIB8060E2B144244C5A38807466893C9F5  
                 
 
                 var tooltipDataFieldList = toolTipDataBegin.map(function(f) {
-                    return { displayName: f.displayName, value: f.toString(true,useDisplayUnits) }
+                    return { displayName: f.displayName, value: f.toString(true,useDisplayUnits, overrideBlanksWithValue) }
                 })
 
                 var percentageFormatter = ValueFormatter.create({ format: "0.00 %;-0.00 %;0.00 %", value: 1, allowFormatBeautification: true });
@@ -481,7 +500,7 @@ module powerbi.extensibility.visual.databarKPIB8060E2B144244C5A38807466893C9F5  
                     
                     gapTargetField.value = settings.textSettings.repPositiveGapAsNegativeNumber == true ? gapTargetField.value * -1 : gapTargetField.value;
 
-                    formattedGapValueTarget = gapTargetField.toString(true, useDisplayUnits);
+                    formattedGapValueTarget = gapTargetField.toString(true, useDisplayUnits, overrideBlanksWithValue);
 
                     if (settings.textSettings.showPercentagesOnGaps == true) {
                         var formattedPercent = percentageFormatter.format(Math.abs(gapTargetField.value) / data.target.value)
@@ -505,7 +524,7 @@ module powerbi.extensibility.visual.databarKPIB8060E2B144244C5A38807466893C9F5  
 
                     gapMaxField.value = settings.textSettings.repPositiveGapAsNegativeNumber == true ? gapMaxField.value * -1 : gapMaxField.value;
 
-                    formattedGapValueMax = gapMaxField.toString(true, useDisplayUnits);
+                    formattedGapValueMax = gapMaxField.toString(true, useDisplayUnits, overrideBlanksWithValue);
 
                     if (settings.textSettings.showPercentagesOnGaps == true) {
                         var formattedPercent = percentageFormatter.format(Math.abs(gapMaxField.value) / data.max.value)
@@ -526,7 +545,7 @@ module powerbi.extensibility.visual.databarKPIB8060E2B144244C5A38807466893C9F5  
                     tooltipDataFieldList.push(
                         {
                             displayName: ttData.displayName,
-                            value: ttData.toString(true, useDisplayUnits)
+                            value: ttData.toString(true, useDisplayUnits, overrideBlanksWithValue)
                         }
                     )
                 }

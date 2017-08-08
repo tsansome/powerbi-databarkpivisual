@@ -91,14 +91,31 @@
                     "type": {
                         "bool": true
                     }
+                },
+                "treatBlanksAsZeros":
+                {
+                    "displayName": "Treat blanks as zeros",
+                    "type": {
+                        "bool": true
+                    }
                 }
             }
         },
         "colorSettings": {
             "displayName": "Colors - Indicators",
             "properties": {
-                "defaultColorNoTarget": {
-                    "displayName": "Default Color for No Target",
+                "defaultColorNoTargetFill": {
+                    "displayName": "Default Color for No Target fill",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color":true
+                            }
+                        }
+                    }
+                }, 
+                "defaultColorNoTargetText": {
+                    "displayName": "Default Color for No Target text",
                     "type": {
                         "fill": {
                             "solid": {
@@ -176,7 +193,7 @@
             } 
         },
         "outerBarSettings": {
-            "displayName": "Outer Bar",
+            "displayName": "Bar",
             "properties": {
                 "fillWhenNoTarget": {
                     "displayName": "Fill 100% when no target",

@@ -46,10 +46,12 @@ module powerbi.extensibility.visual {
       public repPositiveGapAsNegativeNumber: boolean = true;
       public showPercentagesOnGaps: boolean = true;
       public ignoreFormattingForTooltips: boolean = false;
+      public treatBlanksAsZeros: boolean = false;
     }
 
     export class colorSettings {
-      public defaultColorNoTarget: string = "#000000";      
+      public defaultColorNoTargetText: string = "#00000";
+      public defaultColorNoTargetFill: string = "#000000";      
       public lessThanColor: string = "#f44336";
       public equalToColor: string = "#4caf50";
       public greaterThanColor: string = "#4caf50";
