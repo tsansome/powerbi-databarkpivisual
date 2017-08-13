@@ -10008,6 +10008,7 @@ var powerbi;
                 databarKPIB8060E2B144244C5A38807466893C9F5.VisualSettings = VisualSettings;
                 var textSettings = (function () {
                     function textSettings() {
+                        this.position = "below";
                         // Text Size
                         this.fontSize = 12;
                         this.displayUnits = 0;
@@ -10266,8 +10267,10 @@ var powerbi;
                         if (transform.data == null) {
                         }
                         else {
+                            //set up the main visual
+                            var barElement = this.barsContainerElement.append("g").classed("barVisual", true);
                             var SquareArea = new Area(0, parseInt(this.svg.style("width")), 0, parseInt(this.svg.style("height")));
-                            this.draw_one_data_bar(SquareArea, transform.data);
+                            this.add_one_data_bar(barElement, SquareArea, transform.data);
                         }
                     };
                     databarvisual.getToolTipDataForBar = function (dataNonCasted, settings) {
@@ -10332,15 +10335,13 @@ var powerbi;
                         }
                     };
                     /** Draws a single data bar within the area passed in to the function for the data passed in. */
-                    databarvisual.prototype.draw_one_data_bar = function (area, data) {
+                    databarvisual.prototype.add_one_data_bar = function (container, area, data) {
                         var _this = this;
                         //Let's derive some of the sizing
                         //set the bar area to take up 100% of the space
                         var bar_area = area;
-                        //set up the main visual
-                        var barElement = this.barsContainerElement.append("g").classed("barVisual", true);
                         //attach the data to the visual element so that it can be used in the tooltip
-                        barElement.data([data]);
+                        container.data([data]);
                         if (this.settings.textSettings.treatBlanksAsZeros == true) {
                             this.overrideBlanksWithValue = 0;
                         }
@@ -10379,20 +10380,32 @@ var powerbi;
                         //we need to derive the status bar color
                         var stColor = this.derive_status_color(data.value, data.target, data.max);
                         var margin_between_bar_and_text = 2;
-                        if (this.settings.textSettings.showValueText == true) {
-                            //get the formatted value string
-                            this.add_text(barElement, "valueTxt", bar_area.y_max - margin_between_bar_and_text, data.value, stColor.barColor);
+                        if (this.settings.textSettings.position != "onbar") {
+                            var text_y_location = null;
+                            switch (this.settings.textSettings.position) {
+                                case "below":
+                                    text_y_location = bar_area.y_max - margin_between_bar_and_text;
+                                    break;
+                            }
+                            if (this.settings.textSettings.showValueText == true) {
+                                //get the formatted value string
+                                this.add_text(container, "valueTxt", text_y_location, data.value, stColor.barColor);
+                            }
+                            if (data.max != null && this.settings.textSettings.showMaxText == true) {
+                                this.add_text(container, "goalTxt", text_y_location, data.max, "#000000")
+                                    .attr("x", bar_area.x_max - container.select(".goalTxt").node().getBBox().width);
+                            }
+                            //now do the bar placement 
+                            //derive the bar attributes using the overall text height
+                            var goal_txt_height = this.settings.textSettings.showMaxText == false || data.max == null ? 0 : container.select(".goalTxt").node().getBBox().height;
+                            var value_txt_height = this.settings.textSettings.showValueText == false || data.value == null ? 0 : container.select(".valueTxt").node().getBBox().height;
+                            var max_txt_height = goal_txt_height > value_txt_height ? goal_txt_height : value_txt_height;
+                            switch (this.settings.textSettings.position) {
+                                case "below":
+                                    bar_area.y_max = (bar_area.y_max - margin_between_bar_and_text) - max_txt_height;
+                                    break;
+                            }
                         }
-                        if (data.max != null && this.settings.textSettings.showMaxText == true) {
-                            this.add_text(barElement, "goalTxt", bar_area.y_max - margin_between_bar_and_text, data.max, "#000000")
-                                .attr("x", bar_area.x_max - barElement.select(".goalTxt").node().getBBox().width);
-                        }
-                        //now do the bar placement 
-                        //derive the bar attributes using the overall text height
-                        var goal_txt_height = this.settings.textSettings.showMaxText == false ? 0 : barElement.select(".goalTxt").node().getBBox().height;
-                        var value_txt_height = this.settings.textSettings.showValueText == false ? 0 : barElement.select(".valueTxt").node().getBBox().height;
-                        var max_txt_height = goal_txt_height > value_txt_height ? goal_txt_height : value_txt_height;
-                        bar_area.y_max = (bar_area.y_max - margin_between_bar_and_text) - max_txt_height;
                         //okay now make the dashed line area and readjust the bar's area
                         var dashed_line_area = new Area(bar_area.x_min, bar_area.x_max, bar_area.y_min, bar_area.y_max);
                         var margin = (dashed_line_area.height() * 0.15);
@@ -10400,14 +10413,14 @@ var powerbi;
                         bar_area.y_max -= margin;
                         if (data.target == null && data.max == null) {
                             //just draw the main bar as we just want to show the value     
-                            barElement.append("rect")
+                            container.append("rect")
                                 .classed("mabar", true);
                         }
                         else {
                             // draw the complete visual
-                            barElement.append("rect")
+                            container.append("rect")
                                 .classed("mabar", true);
-                            barElement.append("rect")
+                            container.append("rect")
                                 .classed("pebar", true)
                                 .attr("x", bar_area.x_min)
                                 .attr("y", bar_area.y_min)
@@ -10423,7 +10436,7 @@ var powerbi;
                             mainBarFill = this.settings.outerBarSettings.fill;
                         }
                         //add the extra styling to the main outer bar
-                        barElement.select(".mabar")
+                        container.select(".mabar")
                             .attr("width", "100%")
                             .attr("fill", mainBarFill)
                             .attr("stroke", this.settings.outerBarSettings.outlineColor)
@@ -10433,7 +10446,7 @@ var powerbi;
                         // now if a target was specified we need to draw the dashed line
                         if (data.target != null) {
                             //determine where the dashed line should end
-                            barElement.append("line")
+                            container.append("line")
                                 .classed("tline", true)
                                 .attr("y1", dashed_line_area.y_min)
                                 .attr("x1", position_dashed_line_in_percent + "%")
@@ -10442,10 +10455,26 @@ var powerbi;
                                 .style("stroke", this.settings.targetLineSettings.color)
                                 .style("stroke-width", this.settings.targetLineSettings.strokeWidth);
                             if (this.settings.targetLineSettings.lineStyle == "dashed") {
-                                barElement.select(".tline").style("stroke-dasharray", "2,2");
+                                container.select(".tline").style("stroke-dasharray", "2,2");
                             }
                         }
-                        this.tooltipServiceWrapper.addTooltip(barElement, function (tooltipEvent) { return databarvisual.getToolTipDataForBar(tooltipEvent.data, _this.settings); }, function (tooltipEvent) { return null; });
+                        //if the data labels were set to onbar we draw them last
+                        if (this.settings.textSettings.position == "onbar") {
+                            if (this.settings.textSettings.showValueText == true) {
+                                var yOffset = (bar_area.y_min + (bar_area.height() / 2));
+                                //get the formatted value string
+                                this.add_text(container, "valueTxt", 0, data.value, "#000000")
+                                    .attr("x", 3)
+                                    .attr("y", yOffset + (container.select(".valueTxt").node().getBBox().height / 4));
+                            }
+                            if (data.max != null && this.settings.textSettings.showMaxText == true) {
+                                var yOffSet = (bar_area.y_min + (bar_area.height() / 2));
+                                this.add_text(container, "goalTxt", 0, data.max, "#000000")
+                                    .attr("x", bar_area.x_max - container.select(".goalTxt").node().getBBox().width)
+                                    .attr("y", yOffSet + (container.select(".goalTxt").node().getBBox().height / 4));
+                            }
+                        }
+                        this.tooltipServiceWrapper.addTooltip(container, function (tooltipEvent) { return databarvisual.getToolTipDataForBar(tooltipEvent.data, _this.settings); }, function (tooltipEvent) { return null; });
                     };
                     databarvisual.prototype.add_text = function (element, cssClass, yPos, field, fill) {
                         var tmp = element.append("text")

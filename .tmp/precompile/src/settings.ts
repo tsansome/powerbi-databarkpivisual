@@ -36,6 +36,7 @@ module powerbi.extensibility.visual.databarKPIB8060E2B144244C5A38807466893C9F5  
     }
 
     export class textSettings {
+      public position: string = "below";
      // Text Size
       public fontSize: number = 12;
       public displayUnits: number = 0;      

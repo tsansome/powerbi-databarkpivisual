@@ -36,6 +36,7 @@ module powerbi.extensibility.visual {
     }
 
     export class textSettings {
+      public position: string = "below";
      // Text Size
       public fontSize: number = 12;
       public displayUnits: number = 0;      

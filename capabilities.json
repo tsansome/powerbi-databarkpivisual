@@ -29,6 +29,21 @@
         "textSettings": {
             "displayName": "Data labels",
             "properties": {
+                "position": {
+                    "displayName": "Position",
+                    "type": {
+                        "enumeration": [
+                            {   "displayName": "Below",
+                                "value": "below",
+                                "displayNameKey": "0" 
+                            },
+                            {   "displayName": "On bar",
+                                "value": "onbar",
+                                "displayNameKey": "1" 
+                            }
+                        ]
+                    }
+                },
                 "fontSize": {
                     "displayName": "Text size",
                     "type": {
