@@ -105,6 +105,30 @@ module powerbi.extensibility.visual {
         }
     }
 
+    export class Area {
+        x_min:number;
+        x_max:number;
+        y_min:number;
+        y_max:number;
+        public constructor(x_min, x_max, y_min, y_max) {
+            this.x_min = x_min;
+            this.x_max = x_max;
+            this.y_min = y_min;
+            this.y_max = y_max;
+        }
+        public width(): number {
+            return this.x_max - this.x_min;
+        }
+        public height(): number {
+            return this.y_max - this.y_min;
+        }
+    }
+
+    export class StatusColor {
+        public barColor: string;
+        public fontColor: string;
+    }
+
     /**
      * Function that converts queried data into a view model that will be used by the visual
      *
@@ -220,13 +244,16 @@ module powerbi.extensibility.visual {
 
         //svg elements
         private host: IVisualHost;
-        private percentageBarElement;
-        private ActualTxtElement;
-        private GoalTxtElement;
-        private mainBarElement;
-        private dashedLineElement;
-        private bottomPaddingElement;
+        // private percentageBarElement;
+        private barsContainerElement;
+        // private ActualTxtElement;
+        // private GoalTxtElement;
+        // private mainBarElement;
+        // private dashedLineElement;
+        // private bottomPaddingElement;
         private svg: d3.Selection<any>;
+
+        private font_family:string = "'Segoe UI', 'wf_segoe-ui_normal', helvetica, arial, sans-serif;";
 
         private selectionManager : ISelectionManager;
 
@@ -249,7 +276,7 @@ module powerbi.extensibility.visual {
         public update(options: VisualUpdateOptions) {
             this.settings =  databarvisual.parseSettings(options && options.dataViews && options.dataViews[0]);
             console.log('Visual update', options);
-            
+           
             this.canvas_clear();
             
             var transform = visualTransform(options,this.host);
@@ -258,219 +285,8 @@ module powerbi.extensibility.visual {
                 //print out the error message
             }        
             else {  
-                var data = transform.data;    
-                
-                if (this.settings.textSettings.treatBlanksAsZeros == true) {
-                    this.overrideBlanksWithValue = 0;
-                } else {
-                    this.overrideBlanksWithValue = null;
-                }
-
-                //add the display units from settings
-                var tS = this.settings.textSettings;
-                data.value.displayUnits = tS.displayUnitsForValue != 0 ? tS.displayUnitsForValue : tS.displayUnits;
-                if (data.max != null) {
-                    data.max.displayUnits = tS.displayUnitsForMax != 0 ? tS.displayUnitsForMax : tS.displayUnits;
-                }
-
-                for (var i = 0; i < data.tooltipsData.length; i++) {
-                    data.tooltipsData[i].displayUnits = this.settings.textSettings.displayUnits;
-                }
-
-                var percentageDone = 0;
-                var percentageMTDTarget = 0;
-                //below is the actual visual code
-
-                //first we need to determine how much to fill the bar and where the dashed
-                //line should be positioned
-                if (data.target == null) {
-                    if (data.max == null) {
-                        //we have no target and no max
-                        percentageDone = 0;
-                        percentageMTDTarget = 0;
-                    } else {
-                        //we have no target but do have a max
-                        percentageDone = (data.value.value / data.max.value) * 100;
-                        percentageMTDTarget = 0;
-                    }
-                } else {                    
-                    if (data.max == null) {
-                        // so we have a target and a value but no max   
-                        percentageDone = (data.value.value / (data.target.value * 2)) * 100;
-                        percentageMTDTarget = 50                  
-                    }
-                    else {
-                        //we have a target and a max
-                        percentageDone = (data.value.value / data.max.value) * 100
-                        percentageMTDTarget = (data.target.value / data.max.value) * 100
-                    }
-                } 
-            
-                //we need to derive the status bar color
-                var statusBarColor = this.settings.colorSettings.equalToColor;
-                var textColor = this.settings.colorSettings.equalToColor;
-                
-                if (data.target != null) {
-                    data.target.displayUnits = tS.displayUnits;
-                    if (data.value.value > data.target.value) {
-                        statusBarColor = this.settings.colorSettings.greaterThanColor;
-                        textColor = this.settings.colorSettings.greaterThanColor;
-                    } 
-                    else if (data.value.value < data.target.value) {
-                        statusBarColor = this.settings.colorSettings.lessThanColor;
-                        textColor = this.settings.colorSettings.lessThanColor;
-                    }
-                } else {
-                    if (data.max != null) {
-                        if (data.value.value > data.max.value) {
-                            statusBarColor = this.settings.colorSettings.greaterThanColor;
-                            textColor = this.settings.colorSettings.greaterThanColor;
-                        }
-                        else if (data.value.value < data.max.value) {
-                            statusBarColor = this.settings.colorSettings.lessThanColor;
-                            textColor = this.settings.colorSettings.lessThanColor;
-                        }
-                    }
-                }
-
-                if (data.target == null && data.max == null) {
-                    statusBarColor = this.settings.colorSettings.defaultColorNoTargetFill;
-                    textColor = this.settings.colorSettings.defaultColorNoTargetText;
-                }
-
-                //Let's derive some of the sizing
-                var svgWidth = parseInt(this.svg.style("width"))
-                var svgHeight = parseInt(this.svg.style("height"))
-
-                var yActText = null
-                if (this.settings.textSettings.showValueText == true) {
-                    yActText = svgHeight - 2 //-2 for padding
-                    
-                    //get the formatted value string
-                    this.ActualTxtElement.append("text")
-                                        .attr("y", yActText)
-                                        .classed("valueTxt",true)
-                                        .text(data.value.toString(true, true, this.overrideBlanksWithValue))
-                                        .style("font-size",this.settings.textSettings.fontSize + "px")
-                                        .style("font-family","'Segoe UI', 'wf_segoe-ui_normal', helvetica, arial, sans-serif;")
-                                        .style("fill",textColor)
-                }  
-
-                if (this.settings.textSettings.showValueText) {
-                    this.ActualTxtElement.style("fill",statusBarColor)
-                }      
-
-                var yGoalValueTxt = null;
-                if (data.max != null && this.settings.textSettings.showMaxText == true) {
-                    yGoalValueTxt = svgHeight - 2 //-2 for padding
-
-                    //get the formatted target string
-                    var tmp = this.GoalTxtElement.append("text")
-                                    .text(data.max.toString(true, true, this.overrideBlanksWithValue))
-                                    .classed("goalTxt",true)
-                                    .attr("y", yGoalValueTxt)
-                                    .style("font-size",this.settings.textSettings.fontSize + "px")
-                                    .style("font-family","'Segoe UI', 'wf_segoe-ui_normal', helvetica, arial, sans-serif;")
-                    
-                    tmp.attr("x", svgWidth - this.GoalTxtElement.node().getBBox().width)
-                }                                               
-
-                //now do the bar placement 
-
-                //derive the bar attributes using the overall text height
-                var remainingRoom = svgHeight;
-                if (this.settings.textSettings.showMaxText == true) {
-                    remainingRoom = yGoalValueTxt - this.GoalTxtElement.node().getBBox().height
-                } 
-                if (this.settings.textSettings.showValueText == true) {
-                    remainingRoom = yActText - this.ActualTxtElement.node().getBBox().height
-                }
-
-                //make the margin be 5% of the room
-                var marginAroundBar = (remainingRoom * 0.15)
-                var heightOfBar = remainingRoom - (marginAroundBar * 2)
-                
-                let selectionManager = this.selectionManager; 
-
-                if (data.target == null && data.max == null) {
-                    //just draw the main bar as we just want to show the value     
-                    this.mainBarElement .selectAll(".outerBar")
-                                        .data([data])
-                                        .enter()
-                                        .append("rect")
-                                        .classed("mabar",true)
-
-                    this.tooltipServiceWrapper.addTooltip(
-                    this.mainBarElement,
-                    (tooltipEvent: TooltipEventArgs<number>) => databarvisual.getToolTipDataForBar(tooltipEvent.data,this.settings),
-                    (tooltipEvent: TooltipEventArgs<number>) => null);                 
-
-                } 
-                else {
-                    // draw the complete visual
-
-                    this.mainBarElement .append("rect")
-                                        .classed("mabar",true)
-                    
-                    this.percentageBarElement.selectAll(".percentageBar")
-                                        .data([data])
-                                        .enter()
-                                        .append("rect")
-                                        .classed("pebar",true)
-                                        .attr("x",0)
-                                        .attr("width",0)
-                                        .attr("height",heightOfBar)
-                                        .attr("fill",statusBarColor)
-                                        .attr("y", marginAroundBar)
-                                        .attr("width",percentageDone + "%")      
-
-                    this.tooltipServiceWrapper.addTooltip(
-                    this.percentageBarElement,
-                        (tooltipEvent: TooltipEventArgs<number>) => databarvisual.getToolTipDataForBar(tooltipEvent.data,this.settings),
-                        (tooltipEvent: TooltipEventArgs<number>) => null);                
-                        
-                }
-                
-                var mainBarFill = null;
-                if ((data.target == null && data.max == null) && this.settings.outerBarSettings.fillWhenNoTarget) {
-                    mainBarFill = this.settings.colorSettings.defaultColorNoTargetFill;
-                } else {
-                    mainBarFill = this.settings.outerBarSettings.fill;
-                }
-
-                //add the extra styling to the main outer bar
-                this.mainBarElement     .select(".mabar")
-                                        .attr("width","100%")
-                                        .attr("fill",mainBarFill)
-                                        .attr("stroke",this.settings.outerBarSettings.outlineColor)
-                                        .attr("height",heightOfBar)
-                                        .attr("y",marginAroundBar)
-                                        .attr("x", 0)
-
-                // now if a target was specified we need to draw the dashed line
-                if (data.target != null) {
-                    //determine where the dashed line should end
-                    var y2 = svgHeight;
-                    if (yActText != null) {
-                        y2 -= this.ActualTxtElement.node().getBBox().height;
-                    } else if (yGoalValueTxt) {
-                        y2 -= this.GoalTxtElement.node().getBBox().height;
-                    }
-
-                    this.dashedLineElement.append("line")
-                                    .classed("tline",true)
-                                    .attr("y1",0)
-                                    .attr("x1",percentageMTDTarget + "%")
-                                    .attr("x2",percentageMTDTarget + "%")
-                                    .attr("y2", y2)
-                                    .style("stroke",this.settings.targetLineSettings.color)
-                                    .style("stroke-width",this.settings.targetLineSettings.strokeWidth)                  
-                
-                    if (this.settings.targetLineSettings.lineStyle == "dashed") {
-                        this.dashedLineElement.select(".tline").style("stroke-dasharray","2,2");
-                    }
-                } 
-                       
+                var SquareArea = new Area(0, parseInt(this.svg.style("width")), 0, parseInt(this.svg.style("height")));
+                this.draw_one_data_bar(SquareArea, transform.data);   
             }
         }
 
@@ -478,7 +294,7 @@ module powerbi.extensibility.visual {
             var useDisplayUnits = !settings.textSettings.ignoreFormattingForTooltips;
             var data:BarData = dataNonCasted;
             var overrideBlanksWithValue = settings.textSettings.treatBlanksAsZeros == true ? 0 : null;
-
+            
             if (data != null) {
 
                 var toolTipDataBegin = [data.value];
@@ -557,6 +373,193 @@ module powerbi.extensibility.visual {
             }
         }
 
+        /** Draws a single data bar within the area passed in to the function for the data passed in. */
+        private draw_one_data_bar(area : Area, data: BarData) {
+            //Let's derive some of the sizing
+            //set the bar area to take up 100% of the space
+            var bar_area = area;
+            
+            //set up the main visual
+            var barElement = this.barsContainerElement.append("g").classed("barVisual", true);
+            //attach the data to the visual element so that it can be used in the tooltip
+            barElement.data([data]);
+
+            if (this.settings.textSettings.treatBlanksAsZeros == true) {
+                this.overrideBlanksWithValue = 0;
+            } else {
+                this.overrideBlanksWithValue = null;
+            }
+
+            //add the display units from settings
+            var tS = this.settings.textSettings;
+            data.value.displayUnits = tS.displayUnitsForValue != 0 ? tS.displayUnitsForValue : tS.displayUnits;
+            if (data.max != null) {
+                data.max.displayUnits = tS.displayUnitsForMax != 0 ? tS.displayUnitsForMax : tS.displayUnits;
+            }
+
+            for (var i = 0; i < data.tooltipsData.length; i++) {
+                data.tooltipsData[i].displayUnits = this.settings.textSettings.displayUnits;
+            }
+
+            var position_percent_bar_in_percent = 0;
+            var position_dashed_line_in_percent = 0;
+
+            //first we need to determine how much to fill the bar and where the dashed
+            //line should be positioned
+            if (data.target == null) {
+                position_dashed_line_in_percent = 0;
+                position_percent_bar_in_percent = data.max == null ? 0 : (data.value.value / data.max.value) * 100;
+            } 
+            else {                    
+                if (data.max == null) {
+                    // so we have a target and a value but no max   
+                    position_percent_bar_in_percent = (data.value.value / (data.target.value * 2)) * 100;
+                    position_dashed_line_in_percent = 50                  
+                }
+                else {
+                    //we have a target and a max
+                    position_percent_bar_in_percent = (data.value.value / data.max.value) * 100
+                    position_dashed_line_in_percent = (data.target.value / data.max.value) * 100
+                }
+            } 
+        
+            //we need to derive the status bar color
+            var stColor = this.derive_status_color(data.value, data.target, data.max);
+
+            var margin_between_bar_and_text = 2;
+            if (this.settings.textSettings.showValueText == true) {
+                //get the formatted value string
+                this.add_text(barElement, "valueTxt", bar_area.y_max - margin_between_bar_and_text, data.value, stColor.barColor);
+            }  
+
+            if (data.max != null && this.settings.textSettings.showMaxText == true) {
+                this.add_text(barElement, "goalTxt", bar_area.y_max - margin_between_bar_and_text, data.max, "#000000")                
+                    .attr("x", bar_area.x_max - barElement.select(".goalTxt").node().getBBox().width)
+            }                                               
+
+            //now do the bar placement 
+
+            //derive the bar attributes using the overall text height
+            var goal_txt_height = this.settings.textSettings.showMaxText == false ? 0 : barElement.select(".goalTxt").node().getBBox().height;
+            var value_txt_height = this.settings.textSettings.showValueText == false ? 0 : barElement.select(".valueTxt").node().getBBox().height;
+            var max_txt_height = goal_txt_height > value_txt_height ? goal_txt_height : value_txt_height;
+            bar_area.y_max = (bar_area.y_max - margin_between_bar_and_text) - max_txt_height;
+            
+            //okay now make the dashed line area and readjust the bar's area
+            var dashed_line_area = new Area(bar_area.x_min, bar_area.x_max, 
+                                            bar_area.y_min, bar_area.y_max);
+            
+            var margin = (dashed_line_area.height() * 0.15)
+            bar_area.y_min += margin;
+            bar_area.y_max -= margin;
+
+            if (data.target == null && data.max == null) {
+                //just draw the main bar as we just want to show the value     
+                barElement.append("rect")
+                          .classed("mabar", true);                    
+
+            } 
+            else {
+                // draw the complete visual
+
+                barElement.append("rect")
+                          .classed("mabar",true)
+                
+                barElement.append("rect")
+                          .classed("pebar",true)
+                          .attr("x",bar_area.x_min)
+                          .attr("y", bar_area.y_min)
+                          .attr("height", bar_area.height())
+                          .attr("fill", stColor.barColor)                                        
+                          .attr("width",position_percent_bar_in_percent + "%")                     
+                    
+            }
+            
+            var mainBarFill = null;
+            if ((data.target == null && data.max == null) && this.settings.outerBarSettings.fillWhenNoTarget) {
+                mainBarFill = this.settings.colorSettings.defaultColorNoTargetFill;
+            } else {
+                mainBarFill = this.settings.outerBarSettings.fill;
+            }
+
+            //add the extra styling to the main outer bar
+            barElement              .select(".mabar")
+                                    .attr("width","100%")
+                                    .attr("fill",mainBarFill)
+                                    .attr("stroke",this.settings.outerBarSettings.outlineColor)
+                                    .attr("height", bar_area.height())
+                                    .attr("x", bar_area.x_min)
+                                    .attr("y", bar_area.y_min)                                        
+
+            // now if a target was specified we need to draw the dashed line
+            if (data.target != null) {
+                //determine where the dashed line should end
+                barElement  .append("line")
+                            .classed("tline",true)
+                            .attr("y1",dashed_line_area.y_min)
+                            .attr("x1",position_dashed_line_in_percent + "%")
+                            .attr("x2",position_dashed_line_in_percent + "%")
+                            .attr("y2", dashed_line_area.y_max)
+                            .style("stroke",this.settings.targetLineSettings.color)
+                            .style("stroke-width",this.settings.targetLineSettings.strokeWidth)                  
+            
+                if (this.settings.targetLineSettings.lineStyle == "dashed") {
+                    barElement.select(".tline").style("stroke-dasharray","2,2");
+                }
+            } 
+
+            this.tooltipServiceWrapper.addTooltip(
+                    barElement,
+                    (tooltipEvent: TooltipEventArgs<number>) => databarvisual.getToolTipDataForBar(tooltipEvent.data,this.settings),
+                    (tooltipEvent: TooltipEventArgs<number>) => null); 
+        }
+
+        private add_text(element: any, cssClass:string, yPos: number, field: Field, fill: string) {
+            var tmp = element.append("text")
+                             .attr("y", yPos)
+                             .classed(cssClass,true)
+                             .text(field.toString(true, true, this.overrideBlanksWithValue))
+                             .style("font-size",this.settings.textSettings.fontSize + "px")
+                             .style("font-family", this.font_family)
+                             .style("fill", fill)
+            return(tmp)
+        }
+
+        private derive_status_color(value, target?, max?): StatusColor {
+            var stColor = new StatusColor();
+            var statusBarColor = this.settings.colorSettings.equalToColor;
+            var textColor = this.settings.colorSettings.equalToColor;
+            
+            if (target != null) {
+                if (value.value > target.value) {
+                    stColor.barColor = this.settings.colorSettings.greaterThanColor;
+                    stColor.fontColor = this.settings.colorSettings.greaterThanColor;
+                } 
+                else if (value.value < target.value) {
+                    stColor.barColor = this.settings.colorSettings.lessThanColor;
+                    stColor.fontColor = this.settings.colorSettings.lessThanColor;
+                }
+            } else {
+                if (max != null) {
+                    if (value.value > max.value) {
+                        stColor.barColor = this.settings.colorSettings.greaterThanColor;
+                        stColor.fontColor = this.settings.colorSettings.greaterThanColor;
+                    }
+                    else if (value.value < max.value) {
+                        stColor.barColor = this.settings.colorSettings.lessThanColor;
+                        stColor.fontColor = this.settings.colorSettings.lessThanColor;
+                    }
+                }
+            }
+
+            if (target == null && max == null) {
+                stColor.barColor = this.settings.colorSettings.defaultColorNoTargetFill;
+                stColor.fontColor = this.settings.colorSettings.defaultColorNoTargetText;
+            }
+
+            return stColor;
+        }
+
         private canvas_setup() {
 
             var container = d3.select(this.target)
@@ -565,31 +568,12 @@ module powerbi.extensibility.visual {
                                 .attr("width", "100%")
                                 .attr("height", "100%")
 
-            //draw the text
-            this.ActualTxtElement = this.svg.append("g")
-                                            .classed("valueText",true)
+            this.barsContainerElement = this.svg.append("g").classed("bars_container", true);
 
-            this.GoalTxtElement = this.svg.append("g")
-                                          .classed("maxText",true)
-                                          
-            this.mainBarElement = this.svg.append("g")
-                                          .classed("outerBar", true)
-
-            this.percentageBarElement = this.svg.append("g")
-                                                .classed("percentageBar",true)
-            
-            //append the dashed line for the current goal
-            this.dashedLineElement = this.svg.append("g")
-                                             .classed("targetLine", true)
         }
 
         private canvas_clear() {
-            //clear the visual canvas
-            this.dashedLineElement.selectAll(".tline").remove()
-            this.ActualTxtElement.selectAll(".valueTxt").remove()
-            this.GoalTxtElement.selectAll(".goalTxt").remove()
-            this.percentageBarElement.selectAll(".pebar").remove()
-            this.mainBarElement.selectAll(".mabar").remove()
+            this.barsContainerElement.selectAll(".barVisual").remove();
         }
 
         private static parseSettings(dataView: DataView): VisualSettings {
