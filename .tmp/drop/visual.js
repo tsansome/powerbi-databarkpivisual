@@ -10378,11 +10378,6 @@ var powerbi;
                                 else {
                                     master_width_of_visual = (master_width_of_visual - padding_total) / transform.bars.length;
                                 }
-                                //lets add the root one because this shouldn't have padding
-                                // var barData = transform.bars[0];
-                                // var barElement = this.barsContainerElement.append("g").classed("barVisual", true);
-                                // var SquareArea = new Area(0, master_width_of_visual, 0, master_height_of_visual);
-                                // this.add_one_data_bar(barElement, SquareArea, barData);
                                 //now do the others with padding
                                 for (var i = 0; i < transform.bars.length; i++) {
                                     var barData = transform.bars[i];
@@ -10392,7 +10387,7 @@ var powerbi;
                                         y_min = (this.settings.itemsSettings.padding * i) + (master_height_of_visual * i);
                                     }
                                     else {
-                                        x_min = this.settings.itemsSettings.padding + (master_width_of_visual * i);
+                                        x_min = (this.settings.itemsSettings.padding * i) + (master_width_of_visual * i);
                                     }
                                     var square = new Area(x_min, x_min + master_width_of_visual, y_min, y_min + master_height_of_visual);
                                     var barElement = this.barsContainerElement.append("g").classed("barVisual", true);
@@ -10567,7 +10562,8 @@ var powerbi;
                             }
                             if (this.settings.textSettings.showValueText == true) {
                                 //get the formatted value string
-                                this.add_text(container, "valueTxt", this.settings.textSettings.fontSize, text_y_location, data.value, stColor.barColor);
+                                this.add_text(container, "valueTxt", this.settings.textSettings.fontSize, text_y_location, data.value, stColor.barColor)
+                                    .attr("x", bar_area.x_min + 3);
                             }
                             if (data.max != null && this.settings.textSettings.showMaxText == true) {
                                 this.add_text(container, "goalTxt", this.settings.textSettings.fontSize, text_y_location, data.max, "#000000")
@@ -10604,7 +10600,7 @@ var powerbi;
                                 .attr("y", bar_area.y_min)
                                 .attr("height", bar_area.height())
                                 .attr("fill", stColor.barColor)
-                                .attr("width", position_percent_bar_in_percent + "%");
+                                .attr("width", bar_area.width() * (position_percent_bar_in_percent / 100));
                         }
                         var mainBarFill = null;
                         if ((data.target == null && data.max == null) && this.settings.outerBarSettings.fillWhenNoTarget) {
@@ -10615,7 +10611,7 @@ var powerbi;
                         }
                         //add the extra styling to the main outer bar
                         container.select(".mabar")
-                            .attr("width", "100%")
+                            .attr("width", bar_area.width())
                             .attr("fill", mainBarFill)
                             .attr("stroke", this.settings.outerBarSettings.outlineColor)
                             .attr("height", bar_area.height())
@@ -10624,11 +10620,12 @@ var powerbi;
                         // now if a target was specified we need to draw the dashed line
                         if (data.target != null) {
                             //determine where the dashed line should end
+                            var x = bar_area.x_min + (bar_area.width() * (position_dashed_line_in_percent / 100));
                             container.append("line")
                                 .classed("tline", true)
                                 .attr("y1", dashed_line_area.y_min)
-                                .attr("x1", position_dashed_line_in_percent + "%")
-                                .attr("x2", position_dashed_line_in_percent + "%")
+                                .attr("x1", x)
+                                .attr("x2", x)
                                 .attr("y2", dashed_line_area.y_max)
                                 .style("stroke", this.settings.targetLineSettings.color)
                                 .style("stroke-width", this.settings.targetLineSettings.strokeWidth);
@@ -10642,7 +10639,7 @@ var powerbi;
                                 var yOffset = (bar_area.y_min + (bar_area.height() / 2));
                                 //get the formatted value string
                                 this.add_text(container, "valueTxt", this.settings.textSettings.fontSize, 0, data.value, "#000000")
-                                    .attr("x", 3)
+                                    .attr("x", bar_area.x_min + 3)
                                     .attr("y", yOffset + (container.select(".valueTxt").node().getBBox().height / 4));
                             }
                             if (data.max != null && this.settings.textSettings.showMaxText == true) {
