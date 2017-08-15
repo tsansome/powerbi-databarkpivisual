@@ -1,6 +1,12 @@
 {
     "dataRoles": [
         {
+            "displayName": "Category",
+            "name": "category",
+            "kind": "Grouping",
+            "description": "The category to split the bars across. (Optional - use for doing mutliple KPIs)"
+        },
+        {
             "displayName": "Value",
             "name": "value",
             "kind": "Measure",
@@ -26,6 +32,46 @@
         }
     ],
     "objects": {
+        "itemsSettings": {
+            "displayName": "Items",
+            "properties": {
+                "orientation": {
+                    "displayName": "Orientation",
+                    "type": {
+                        "enumeration": [
+                            {   "displayName": "Vertical",
+                                "value": "vertical",
+                                "displayNameKey": "0" 
+                            },
+                            {   "displayName": "Horizontal",
+                                "value": "horizontal",
+                                "displayNameKey": "1" 
+                            }
+                        ]
+                    }
+                },
+                "padding": {
+                    "displayName": "Padding",
+                    "type": {
+                        "numeric": true
+                    }
+                },
+                "minWidth": {
+                    "displayName": "Min width",
+                    "description": "Used for horizontal orientation",
+                    "type": {
+                        "numeric": true
+                    }
+                },
+                "minHeight": {
+                    "displayName": "Min height",
+                    "description": "Used for vertical orientation",
+                    "type": {
+                        "numeric": true
+                    }
+                }
+            }
+        },
         "textSettings": {
             "displayName": "Data labels",
             "properties": {
@@ -237,6 +283,90 @@
                     }
                 }
             }
+        },
+        "headerSettings": {
+            "displayName": "Header",
+            "properties": {
+                "show": {
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "position": {
+                    "displayName": "Position",
+                    "type": {
+                        "enumeration": [
+                            {   "displayName": "Top",
+                                "value": "top",
+                                "displayNameKey": "0" 
+                            },
+                            {   "displayName": "Left",
+                                "value": "left",
+                                "displayNameKey": "1" 
+                            },
+                            {
+                                "displayName": "Right",
+                                "value": "right",
+                                "displayNameKey": "2"
+                            },
+                            {   "displayName": "Bottom",
+                                "value": "bottom",
+                                "displayNameKey": "2" 
+                            }
+                        ]
+                    }
+                },
+                "value": {
+                    "displayName": "Label",
+                    "type":{
+                        "text": true
+                    }
+                },
+                "fontSize": {
+                    "displayName": "Font size",
+                    "type":{
+                        "formatting": {
+                            "fontSize": true
+                        }   
+                    }
+                },
+                "margin_between": {
+                    "displayName": "Margin between header and items",
+                    "type": {
+                        "numeric": true
+                    }
+                }
+            }
+        },
+        "headerWhenSmallSettings": {
+            "displayName": "Header - when small",
+            "properties": {
+                "show": {
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "threshold": {
+                    "displayName": "Threshold",
+                    "type": {
+                        "numeric": true
+                    }
+                },
+                "fontSize": {
+                    "displayName": "Font size",
+                    "type":{
+                        "formatting": {
+                            "fontSize": true
+                        }   
+                    }
+                },
+                "value": {
+                    "displayName": "Label",
+                    "type":{
+                        "text": true
+                    }
+                }                
+            }
         }
     },
     "dataViewMappings": [
@@ -257,17 +387,16 @@
                     }
                 }
             ],
-            "table": {
-                "rows": {
-                    "select": [{"for": { 
-                                    "in": "value"}},
-                               {"for": { 
-                                   "in": "target"}},
-                               {"for": { 
-                                   "in": "max"}},
-                               { "for": {
-                                   "in": "tooltips"
-                               }}]
+            "categorical": {
+                "categories": {
+                    "for": { "in": "category" }
+                },
+                "values": {
+                    "select": [
+                        { "bind": { "to": "value"} },
+                        { "bind": { "to": "target"} },
+                        { "bind": { "to": "max" }}
+                    ]
                 }
             }
         }

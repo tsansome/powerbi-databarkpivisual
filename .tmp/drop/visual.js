@@ -9997,15 +9997,28 @@ var powerbi;
                     __extends(VisualSettings, _super);
                     function VisualSettings() {
                         var _this = _super !== null && _super.apply(this, arguments) || this;
+                        _this.itemsSettings = new itemsSettings();
                         _this.textSettings = new textSettings();
                         _this.colorSettings = new colorSettings();
                         _this.targetLineSettings = new targetLineSettings();
                         _this.outerBarSettings = new outerBarSettings();
+                        _this.headerSettings = new headerSettings();
+                        _this.headerWhenSmallSettings = new headerWhenSmallSettings();
                         return _this;
                     }
                     return VisualSettings;
                 }(DataViewObjectsParser));
                 databarKPIB8060E2B144244C5A38807466893C9F5.VisualSettings = VisualSettings;
+                var itemsSettings = (function () {
+                    function itemsSettings() {
+                        this.orientation = "vertical";
+                        this.padding = 5;
+                        this.minWidth = 20;
+                        this.minHeight = 20;
+                    }
+                    return itemsSettings;
+                }());
+                databarKPIB8060E2B144244C5A38807466893C9F5.itemsSettings = itemsSettings;
                 var textSettings = (function () {
                     function textSettings() {
                         this.position = "below";
@@ -10053,6 +10066,27 @@ var powerbi;
                     return outerBarSettings;
                 }());
                 databarKPIB8060E2B144244C5A38807466893C9F5.outerBarSettings = outerBarSettings;
+                var headerSettings = (function () {
+                    function headerSettings() {
+                        this.show = false;
+                        this.position = "left";
+                        this.value = "";
+                        this.fontSize = 18;
+                        this.margin_between = 5;
+                    }
+                    return headerSettings;
+                }());
+                databarKPIB8060E2B144244C5A38807466893C9F5.headerSettings = headerSettings;
+                var headerWhenSmallSettings = (function () {
+                    function headerWhenSmallSettings() {
+                        this.show = false;
+                        this.threshold = 100;
+                        this.fontSize = 12;
+                        this.value = "";
+                    }
+                    return headerWhenSmallSettings;
+                }());
+                databarKPIB8060E2B144244C5A38807466893C9F5.headerWhenSmallSettings = headerWhenSmallSettings;
             })(databarKPIB8060E2B144244C5A38807466893C9F5 = visual.databarKPIB8060E2B144244C5A38807466893C9F5 || (visual.databarKPIB8060E2B144244C5A38807466893C9F5 = {}));
         })(visual = extensibility.visual || (extensibility.visual = {}));
     })(extensibility = powerbi.extensibility || (powerbi.extensibility = {}));
@@ -10136,7 +10170,10 @@ var powerbi;
                 databarKPIB8060E2B144244C5A38807466893C9F5.Field = Field;
                 var BarData = (function () {
                     function BarData() {
+                        this.value = new Field(null, "", "", 0);
                         this.tooltipsData = [];
+                        this.target = null;
+                        this.max = null;
                     }
                     BarData.prototype.gapBetweenValueAndTarget = function () {
                         var ff = new Field(this.target.value - this.value.value, this.value.format, "Gap - " + this.value.displayName + " & " + this.target.displayName);
@@ -10183,13 +10220,14 @@ var powerbi;
                 function visualTransform(options, host) {
                     /*Convert dataView to your viewModel*/
                     var bdf = new BarDataTransform();
-                    var values = options.dataViews[0].table.rows[0];
+                    var categorical_data = options.dataViews[0].categorical;
                     //now set up my data
                     //loop through the data set and set up a value mapping table
                     var valueArray = [];
+                    var valueSets = options.dataViews[0].categorical.values;
                     valueArray["tooltips"] = [];
-                    for (var i = 0; i < options.dataViews[0].table.columns.length; i++) {
-                        var columnRole = options.dataViews[0].table.columns[i].roles;
+                    for (var i = 0; i < valueSets.length; i++) {
+                        var columnRole = valueSets[i].source.roles;
                         if (columnRole["value"] == true) {
                             valueArray["value"] = i;
                         }
@@ -10204,48 +10242,77 @@ var powerbi;
                         }
                     }
                     if (valueArray["value"] == undefined) {
-                        bdf.data = null;
+                        bdf.bars = null;
                         bdf.statusMessage = "The value field must be supplied";
                         return bdf;
                     }
                     //collect the data
-                    var data = new BarData();
-                    var columnsRef = options.dataViews[0].table.columns;
-                    var value = null;
-                    if (values[valueArray["value"]] != null) {
-                        var value_string = values[valueArray["value"]].toString();
-                        value = Number(value_string);
-                    }
-                    data.value = new Field(value, columnsRef[valueArray["value"]].format, columnsRef[valueArray["value"]].displayName);
-                    if (valueArray["target"] != undefined && values[valueArray["target"]] != null) {
-                        data.target = new Field(Number(values[valueArray["target"]].toString()), columnsRef[valueArray["target"]].format, columnsRef[valueArray["target"]].displayName);
+                    //setup the bars
+                    var arrays_of_bars = [];
+                    var cats = categorical_data.categories[0].values;
+                    if (cats.length == 0) {
+                        arrays_of_bars.push(new BarData());
                     }
                     else {
-                        data.target = null;
+                        cats.forEach(function () { arrays_of_bars.push(new BarData()); });
                     }
-                    if (valueArray["max"] != undefined && values[valueArray["max"]] != null) {
-                        data.max = new Field(Number(values[valueArray["max"]].toString()), columnsRef[valueArray["max"]].format, columnsRef[valueArray["max"]].displayName);
+                    // okay so let's first handle the value
+                    if (valueArray["value"] != undefined) {
+                        var valueColumn = valueSets[valueArray["value"]];
+                        for (var i = 0; i < valueColumn.values.length; i++) {
+                            var value = null;
+                            if (valueColumn.values[i] != null) {
+                                var value_string = valueColumn.values[i].toString();
+                                value = Number(value_string);
+                            }
+                            arrays_of_bars[i].value = new Field(value, valueColumn.source.format, valueColumn.source.displayName);
+                        }
                     }
                     else {
-                        data.max = null;
-                    }
-                    if ((data.target != null && data.max != null) && data.target.value > data.max.value) {
-                        bdf.data = null;
-                        bdf.statusMessage = "Target (" + data.target.value + ") is greater than max (" + data.max.value + "). This is not allowed";
-                        return bdf;
-                    }
-                    // now process the tooltips
-                    for (var i = 0; i < valueArray["tooltips"].length; i++) {
-                        var toolTipIndex = valueArray["tooltips"][i];
-                        if (values[toolTipIndex] == null) {
-                            var tooltipF = new Field(null, columnsRef[toolTipIndex].format, columnsRef[toolTipIndex].displayName, 0);
+                        //set value to null for all of the bars
+                        for (var i = 0; i < arrays_of_bars.length; i++) {
+                            arrays_of_bars[i].value = null;
                         }
-                        else {
-                            var tooltipF = new Field(Number(values[toolTipIndex].toString()), columnsRef[toolTipIndex].format, columnsRef[toolTipIndex].displayName, 0);
-                        }
-                        data.tooltipsData.push(tooltipF);
                     }
-                    bdf.data = data;
+                    //now let's handle the target column
+                    if (valueArray["target"] != undefined) {
+                        var targetColumn = valueSets[valueArray["target"]];
+                        for (var i = 0; i < targetColumn.values.length; i++) {
+                            var target = null;
+                            if (targetColumn.values[i] != null) {
+                                var target_string = targetColumn.values[i].toString();
+                                arrays_of_bars[i].target = new Field(Number(target_string), targetColumn.source.format, targetColumn.source.displayName);
+                            }
+                        }
+                    }
+                    //finally the max column
+                    if (valueArray["max"] != undefined) {
+                        var maxColumn = valueSets[valueArray["max"]];
+                        for (var i = 0; i < maxColumn.values.length; i++) {
+                            var max = null;
+                            if (maxColumn.values[i] != null) {
+                                var max_string = maxColumn.values[i].toString();
+                                arrays_of_bars[i].max = new Field(Number(max_string), maxColumn.source.format, maxColumn.source.displayName);
+                            }
+                        }
+                    }
+                    //now lastly the tooltips
+                    if (valueArray["tooltips"] != undefined) {
+                        for (var i = 0; i < valueArray["tooltips"].length; i++) {
+                            var index = valueArray["tooltips"][i];
+                            var tooltipColumn = valueSets[index];
+                            for (var i = 0; i < tooltipColumn.values.length; i++) {
+                                var max = null;
+                                if (tooltipColumn.values[i] != null) {
+                                    var max_string = tooltipColumn.values[i].toString();
+                                    max = Number(max_string);
+                                    arrays_of_bars[i].max = new Field(max, tooltipColumn.source.format, tooltipColumn.source.displayName);
+                                }
+                            }
+                        }
+                    }
+                    //and now we can pass it on        
+                    bdf.bars = arrays_of_bars;
                     bdf.statusMessage = null;
                     return bdf;
                 }
@@ -10264,13 +10331,81 @@ var powerbi;
                         console.log('Visual update', options);
                         this.canvas_clear();
                         var transform = visualTransform(options, this.host);
-                        if (transform.data == null) {
+                        if (transform.bars == null) {
                         }
                         else {
-                            //set up the main visual
-                            var barElement = this.barsContainerElement.append("g").classed("barVisual", true);
-                            var SquareArea = new Area(0, parseInt(this.svg.style("width")), 0, parseInt(this.svg.style("height")));
-                            this.add_one_data_bar(barElement, SquareArea, transform.data);
+                            if (transform.bars.length > 1) {
+                                //okay we need to determine the max
+                                var maxFound = null;
+                                transform.bars.forEach(function (value, i) {
+                                    var base = value.value == null || value.value.value == null ? null : value.value;
+                                    if (value.target != null && value.target.value != null && base.value < value.target.value) {
+                                        base = value.target;
+                                    }
+                                    if (value.max != null && value.max.value != null && base.value < value.max.value) {
+                                        base = value.max;
+                                    }
+                                    //now compare base to max found
+                                    maxFound = maxFound < base ? base : maxFound;
+                                });
+                                //now we need to draw the max and find the maximum height and width it could be
+                                var cont = this.svg;
+                                this.add_text(cont, "sampleText", this.settings.headerSettings.fontSize, 0, maxFound, "#000000");
+                                var max_text_height = cont.select(".sampleText").node().getBBox().height;
+                                var max_text_width = cont.select(".sampleText").node().getBBox().width;
+                                cont.select(".sampleText").remove();
+                                //now let's handle drawing them
+                                //we need to see if we can fit them in the space first
+                                var one_visual_height = (max_text_height + this.settings.itemsSettings.minHeight);
+                                var one_visual_width = (max_text_width * 2);
+                                var min_height_needed = one_visual_height;
+                                var min_width_needed = one_visual_width;
+                                var padding_total = (this.settings.itemsSettings.padding * (transform.bars.length - 1));
+                                if (this.settings.itemsSettings.orientation == "vertical") {
+                                    min_height_needed = (one_visual_height * transform.bars.length) + padding_total;
+                                }
+                                else {
+                                    min_width_needed = (one_visual_width * transform.bars.length) + padding_total;
+                                }
+                                //now we're going to either try and squeeze it in or just make it overflow if the minimum does not meet
+                                var svgWidth = parseInt(this.svg.style("width"));
+                                var svgHeight = parseInt(this.svg.style("height"));
+                                var master_height_of_visual = min_height_needed < svgHeight ? svgHeight : min_height_needed;
+                                var master_width_of_visual = min_width_needed < svgWidth ? svgWidth : min_width_needed;
+                                if (this.settings.itemsSettings.orientation == "vertical") {
+                                    master_height_of_visual = (master_height_of_visual - padding_total) / transform.bars.length;
+                                }
+                                else {
+                                    master_width_of_visual = (master_width_of_visual - padding_total) / transform.bars.length;
+                                }
+                                //lets add the root one because this shouldn't have padding
+                                // var barData = transform.bars[0];
+                                // var barElement = this.barsContainerElement.append("g").classed("barVisual", true);
+                                // var SquareArea = new Area(0, master_width_of_visual, 0, master_height_of_visual);
+                                // this.add_one_data_bar(barElement, SquareArea, barData);
+                                //now do the others with padding
+                                for (var i = 0; i < transform.bars.length; i++) {
+                                    var barData = transform.bars[i];
+                                    var x_min = 0;
+                                    var y_min = 0;
+                                    if (this.settings.itemsSettings.orientation == "vertical") {
+                                        y_min = (this.settings.itemsSettings.padding * i) + (master_height_of_visual * i);
+                                    }
+                                    else {
+                                        x_min = this.settings.itemsSettings.padding + (master_width_of_visual * i);
+                                    }
+                                    var square = new Area(x_min, x_min + master_width_of_visual, y_min, y_min + master_height_of_visual);
+                                    var barElement = this.barsContainerElement.append("g").classed("barVisual", true);
+                                    this.add_one_data_bar(barElement, square, barData);
+                                }
+                            }
+                            else {
+                                //set up the main visual
+                                var barData = transform.bars[0];
+                                var barElement = this.barsContainerElement.append("g").classed("barVisual", true);
+                                var SquareArea = new Area(0, parseInt(this.svg.style("width")), 0, parseInt(this.svg.style("height")));
+                                this.add_one_data_bar(barElement, SquareArea, barData);
+                            }
                         }
                     };
                     databarvisual.getToolTipDataForBar = function (dataNonCasted, settings) {
@@ -10342,6 +10477,49 @@ var powerbi;
                         var bar_area = area;
                         //attach the data to the visual element so that it can be used in the tooltip
                         container.data([data]);
+                        //handle the header scenario
+                        if (this.settings.headerSettings.show == true) {
+                            var margin_between_items = this.settings.headerSettings.margin_between;
+                            var label = this.settings.headerSettings.value;
+                            var font_size = this.settings.headerSettings.fontSize;
+                            //now do an adjustment to the label shown - primarily for mobile visualisation
+                            if (this.settings.headerWhenSmallSettings.show == true && this.settings.headerWhenSmallSettings.threshold != null) {
+                                if (this.settings.headerWhenSmallSettings.threshold > bar_area.width()) {
+                                    label = this.settings.headerWhenSmallSettings.value != null ? this.settings.headerWhenSmallSettings.value : label;
+                                    font_size = this.settings.headerWhenSmallSettings.fontSize != null ? this.settings.headerWhenSmallSettings.fontSize : font_size;
+                                }
+                            }
+                            var header = container.append("text")
+                                .classed("headerText", true)
+                                .text(label);
+                            //before we position it we need to draw it
+                            header.style("font-size", font_size + "pt")
+                                .style("font-family", this.font_family);
+                            var headerElemWidth = header.node().getBBox().width;
+                            var headerElemHeight = header.node().getBBox().height;
+                            //now position it taking in the position that was set in settings
+                            var position = this.settings.headerSettings.position;
+                            var headerArea = this.position_header(position, headerElemWidth, headerElemHeight);
+                            header.attr("x", headerArea.x_min)
+                                .attr("y", headerArea.y_max);
+                            //now we need to adjust the actual visual based on the position
+                            switch (position) {
+                                case "left":
+                                    bar_area.x_min = headerArea.x_max + margin_between_items;
+                                    break;
+                                case "right":
+                                    bar_area.x_max = bar_area.width() - (headerArea.width() + margin_between_items);
+                                    break;
+                                case "top":
+                                    bar_area.y_min = margin_between_items + headerArea.height() + margin_between_items;
+                                    break;
+                                case "bottom":
+                                    bar_area.y_max = bar_area.height() - (margin_between_items + headerArea.height());
+                                    break;
+                                default:
+                                    throw new Error("Somehow the position wasn't set to one of the available values (left, right, top, bottom).");
+                            }
+                        }
                         if (this.settings.textSettings.treatBlanksAsZeros == true) {
                             this.overrideBlanksWithValue = 0;
                         }
@@ -10389,10 +10567,10 @@ var powerbi;
                             }
                             if (this.settings.textSettings.showValueText == true) {
                                 //get the formatted value string
-                                this.add_text(container, "valueTxt", text_y_location, data.value, stColor.barColor);
+                                this.add_text(container, "valueTxt", this.settings.textSettings.fontSize, text_y_location, data.value, stColor.barColor);
                             }
                             if (data.max != null && this.settings.textSettings.showMaxText == true) {
-                                this.add_text(container, "goalTxt", text_y_location, data.max, "#000000")
+                                this.add_text(container, "goalTxt", this.settings.textSettings.fontSize, text_y_location, data.max, "#000000")
                                     .attr("x", bar_area.x_max - container.select(".goalTxt").node().getBBox().width);
                             }
                             //now do the bar placement 
@@ -10463,28 +10641,62 @@ var powerbi;
                             if (this.settings.textSettings.showValueText == true) {
                                 var yOffset = (bar_area.y_min + (bar_area.height() / 2));
                                 //get the formatted value string
-                                this.add_text(container, "valueTxt", 0, data.value, "#000000")
+                                this.add_text(container, "valueTxt", this.settings.textSettings.fontSize, 0, data.value, "#000000")
                                     .attr("x", 3)
                                     .attr("y", yOffset + (container.select(".valueTxt").node().getBBox().height / 4));
                             }
                             if (data.max != null && this.settings.textSettings.showMaxText == true) {
                                 var yOffSet = (bar_area.y_min + (bar_area.height() / 2));
-                                this.add_text(container, "goalTxt", 0, data.max, "#000000")
+                                this.add_text(container, "goalTxt", this.settings.textSettings.fontSize, 0, data.max, "#000000")
                                     .attr("x", bar_area.x_max - container.select(".goalTxt").node().getBBox().width)
-                                    .attr("y", yOffSet + (container.select(".goalTxt").node().getBBox().height / 4));
+                                    .attr("y", yOffSet + (container.select(".goalTxt").node().getBBox().height / 4))
+                                    .style("stroke");
                             }
                         }
                         this.tooltipServiceWrapper.addTooltip(container, function (tooltipEvent) { return databarvisual.getToolTipDataForBar(tooltipEvent.data, _this.settings); }, function (tooltipEvent) { return null; });
                     };
-                    databarvisual.prototype.add_text = function (element, cssClass, yPos, field, fill) {
+                    databarvisual.prototype.add_text = function (element, cssClass, fontSize, yPos, field, fill) {
                         var tmp = element.append("text")
                             .attr("y", yPos)
                             .classed(cssClass, true)
                             .text(field.toString(true, true, this.overrideBlanksWithValue))
-                            .style("font-size", this.settings.textSettings.fontSize + "px")
+                            .style("font-size", fontSize + "px")
                             .style("font-family", this.font_family)
                             .style("fill", fill);
                         return (tmp);
+                    };
+                    databarvisual.prototype.position_header = function (position, headerElemWidth, headerElemHeight) {
+                        var svgWidth = parseInt(this.svg.style("width"));
+                        var svgHeight = parseInt(this.svg.style("height"));
+                        var headerTxtArea = new Area(0, headerElemWidth, 0, headerElemHeight);
+                        var headerXPx = null;
+                        var headerYPx = null;
+                        if (position == "left") {
+                            //align the y to be the center in terms of the
+                            headerXPx = 0;
+                            headerTxtArea.y_max = (svgHeight / 2) + (headerElemHeight / 4);
+                            headerTxtArea.y_min = headerTxtArea.y_max - headerElemHeight;
+                        }
+                        else if (position == "top") {
+                            //horizontal x needs to be at center
+                            headerTxtArea.x_min = (svgWidth / 2) - (headerElemWidth / 2);
+                            headerTxtArea.x_max = headerTxtArea.x_min + headerElemWidth;
+                        }
+                        else if (position == "right") {
+                            //align the y to be the center in terms of the
+                            headerTxtArea.x_min = svgWidth - headerTxtArea.width();
+                            headerTxtArea.x_max = svgWidth;
+                            headerTxtArea.y_max = (svgHeight / 2) + (headerTxtArea.height() / 4);
+                            headerTxtArea.y_min = headerTxtArea.y_max - headerElemHeight;
+                        }
+                        else if (position == "bottom") {
+                            //horizontal x needs to be at center
+                            headerTxtArea.x_min = (svgWidth / 2) - (headerTxtArea.width() / 2);
+                            headerTxtArea.x_max = headerTxtArea.x_min + headerElemWidth;
+                            headerTxtArea.y_max = svgHeight - 5;
+                            headerTxtArea.y_min = headerTxtArea.y_max - headerElemHeight;
+                        }
+                        return headerTxtArea;
                     };
                     databarvisual.prototype.derive_status_color = function (value, target, max) {
                         var stColor = new StatusColor();

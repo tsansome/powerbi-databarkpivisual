@@ -29,10 +29,20 @@ module powerbi.extensibility.visual.databarKPIB8060E2B144244C5A38807466893C9F5  
     import DataViewObjectsParser = powerbi.extensibility.utils.dataview.DataViewObjectsParser;
 
     export class VisualSettings extends DataViewObjectsParser {
+      public itemsSettings: itemsSettings = new itemsSettings();
       public textSettings: textSettings = new textSettings();
       public colorSettings: colorSettings = new colorSettings();
       public targetLineSettings: targetLineSettings = new targetLineSettings();
       public outerBarSettings: outerBarSettings = new outerBarSettings();
+      public headerSettings: headerSettings = new headerSettings();
+      public headerWhenSmallSettings: headerWhenSmallSettings = new headerWhenSmallSettings();
+    }
+
+    export class itemsSettings {
+      public orientation: string = "vertical";
+      public padding: number = 5;
+      public minWidth: number = 20;
+      public minHeight: number = 20;
     }
 
     export class textSettings {
@@ -68,6 +78,21 @@ module powerbi.extensibility.visual.databarKPIB8060E2B144244C5A38807466893C9F5  
       public fillWhenNoTarget: boolean = true;
       public fill: string = "white";
       public outlineColor: string = "grey";
+    }
+
+    export class headerSettings {
+        public show:boolean = false;
+        public position:string = "left";
+        public value:string = "";
+        public fontSize: number = 18;
+        public margin_between: number = 5;
+    }
+
+    export class headerWhenSmallSettings {
+        public show:boolean = false;
+        public threshold: number = 100;
+        public fontSize: number = 12;
+        public value: string = "";        
     }
 
 }
