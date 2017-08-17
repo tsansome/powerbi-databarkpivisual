@@ -10134,7 +10134,8 @@ var powerbi;
                 }());
                 databarKPIB8060E2B144244C5A38807466893C9F5.BarDataTransform = BarDataTransform;
                 var Field = (function () {
-                    function Field(value, format, displayName, displayUnits) {
+                    function Field(category, value, format, displayName, displayUnits) {
+                        this.category = category;
                         this.value = value;
                         this.format = format;
                         this.displayName = displayName;
@@ -10170,17 +10171,17 @@ var powerbi;
                 databarKPIB8060E2B144244C5A38807466893C9F5.Field = Field;
                 var BarData = (function () {
                     function BarData() {
-                        this.value = new Field(null, "", "", 0);
+                        this.value = new Field("", null, "", "", 0);
                         this.tooltipsData = [];
                         this.target = null;
                         this.max = null;
                     }
                     BarData.prototype.gapBetweenValueAndTarget = function () {
-                        var ff = new Field(this.target.value - this.value.value, this.value.format, "Gap - " + this.value.displayName + " & " + this.target.displayName);
+                        var ff = new Field(this.value.category, this.target.value - this.value.value, this.value.format, "Gap - " + this.value.displayName + " & " + this.target.displayName);
                         return ff;
                     };
                     BarData.prototype.gapBetweenValueAndMax = function () {
-                        var ff = new Field(this.max.value - this.value.value, this.value.format, "Gap - " + this.value.displayName + " & " + this.max.displayName);
+                        var ff = new Field(this.value.category, this.max.value - this.value.value, this.value.format, "Gap - " + this.value.displayName + " & " + this.max.displayName);
                         return ff;
                     };
                     return BarData;
@@ -10249,12 +10250,18 @@ var powerbi;
                     //collect the data
                     //setup the bars
                     var arrays_of_bars = [];
-                    var cats = categorical_data.categories[0].values;
-                    if (cats.length == 0) {
+                    var cats = null;
+                    if (categorical_data.categories == null) {
                         arrays_of_bars.push(new BarData());
                     }
                     else {
-                        cats.forEach(function () { arrays_of_bars.push(new BarData()); });
+                        cats = categorical_data.categories[0].values;
+                        if (cats.length == 0) {
+                            arrays_of_bars.push(new BarData());
+                        }
+                        else {
+                            cats.forEach(function () { arrays_of_bars.push(new BarData()); });
+                        }
                     }
                     // okay so let's first handle the value
                     if (valueArray["value"] != undefined) {
@@ -10265,7 +10272,8 @@ var powerbi;
                                 var value_string = valueColumn.values[i].toString();
                                 value = Number(value_string);
                             }
-                            arrays_of_bars[i].value = new Field(value, valueColumn.source.format, valueColumn.source.displayName);
+                            var category = cats != null ? cats[i] : null;
+                            arrays_of_bars[i].value = new Field(category, value, valueColumn.source.format, valueColumn.source.displayName);
                         }
                     }
                     else {
@@ -10281,7 +10289,8 @@ var powerbi;
                             var target = null;
                             if (targetColumn.values[i] != null) {
                                 var target_string = targetColumn.values[i].toString();
-                                arrays_of_bars[i].target = new Field(Number(target_string), targetColumn.source.format, targetColumn.source.displayName);
+                                var category = cats != null ? cats[i] : null;
+                                arrays_of_bars[i].target = new Field(category, Number(target_string), targetColumn.source.format, targetColumn.source.displayName);
                             }
                         }
                     }
@@ -10292,7 +10301,8 @@ var powerbi;
                             var max = null;
                             if (maxColumn.values[i] != null) {
                                 var max_string = maxColumn.values[i].toString();
-                                arrays_of_bars[i].max = new Field(Number(max_string), maxColumn.source.format, maxColumn.source.displayName);
+                                var category = cats != null ? cats[i] : null;
+                                arrays_of_bars[i].max = new Field(category, Number(max_string), maxColumn.source.format, maxColumn.source.displayName);
                             }
                         }
                     }
@@ -10306,7 +10316,8 @@ var powerbi;
                                 if (tooltipColumn.values[i] != null) {
                                     var max_string = tooltipColumn.values[i].toString();
                                     max = Number(max_string);
-                                    arrays_of_bars[i].max = new Field(max, tooltipColumn.source.format, tooltipColumn.source.displayName);
+                                    var category = cats != null ? cats[i] : null;
+                                    arrays_of_bars[i].max = new Field(category, max, tooltipColumn.source.format, tooltipColumn.source.displayName);
                                 }
                             }
                         }
@@ -10472,18 +10483,10 @@ var powerbi;
                         var bar_area = area;
                         //attach the data to the visual element so that it can be used in the tooltip
                         container.data([data]);
-                        //handle the header scenario
-                        if (this.settings.headerSettings.show == true) {
+                        if (data.value.category != null) {
                             var margin_between_items = this.settings.headerSettings.margin_between;
-                            var label = this.settings.headerSettings.value;
                             var font_size = this.settings.headerSettings.fontSize;
-                            //now do an adjustment to the label shown - primarily for mobile visualisation
-                            if (this.settings.headerWhenSmallSettings.show == true && this.settings.headerWhenSmallSettings.threshold != null) {
-                                if (this.settings.headerWhenSmallSettings.threshold > bar_area.width()) {
-                                    label = this.settings.headerWhenSmallSettings.value != null ? this.settings.headerWhenSmallSettings.value : label;
-                                    font_size = this.settings.headerWhenSmallSettings.fontSize != null ? this.settings.headerWhenSmallSettings.fontSize : font_size;
-                                }
-                            }
+                            var label = data.value.category;
                             var header = container.append("text")
                                 .classed("headerText", true)
                                 .text(label);
@@ -10494,7 +10497,7 @@ var powerbi;
                             var headerElemHeight = header.node().getBBox().height;
                             //now position it taking in the position that was set in settings
                             var position = this.settings.headerSettings.position;
-                            var headerArea = this.position_header(position, headerElemWidth, headerElemHeight);
+                            var headerArea = this.position_category_label(position, headerElemWidth, headerElemHeight, bar_area);
                             header.attr("x", headerArea.x_min)
                                 .attr("y", headerArea.y_max);
                             //now we need to adjust the actual visual based on the position
@@ -10515,6 +10518,45 @@ var powerbi;
                                     throw new Error("Somehow the position wasn't set to one of the available values (left, right, top, bottom).");
                             }
                         }
+                        //handle the header scenario
+                        // if (this.settings.headerSettings.show == true) {
+                        //     var margin_between_items = this.settings.headerSettings.margin_between;
+                        //     var label = this.settings.headerSettings.value;
+                        //     var font_size = this.settings.headerSettings.fontSize;          
+                        //     //now do an adjustment to the label shown - primarily for mobile visualisation
+                        //     if (this.settings.headerWhenSmallSettings.show == true && this.settings.headerWhenSmallSettings.threshold != null) {
+                        //         if (this.settings.headerWhenSmallSettings.threshold > bar_area.width()) {
+                        //             label = this.settings.headerWhenSmallSettings.value != null ? this.settings.headerWhenSmallSettings.value : label;
+                        //             font_size = this.settings.headerWhenSmallSettings.fontSize != null ? this.settings.headerWhenSmallSettings.fontSize : font_size;
+                        //         }
+                        //     }
+                        //     var header = container.append("text")
+                        //                 .classed("headerText",true)
+                        //                 .text(label);
+                        //     //before we position it we need to draw it
+                        //     header.style("font-size",font_size + "pt")
+                        //             .style("font-family",this.font_family);
+                        //     var headerElemWidth = header.node().getBBox().width;
+                        //     var headerElemHeight = header.node().getBBox().height;
+                        //     //now position it taking in the position that was set in settings
+                        //     var position = this.settings.headerSettings.position;
+                        //     var headerArea = this.position_header(position, headerElemWidth, headerElemHeight);
+                        //     header.attr("x", headerArea.x_min)
+                        //             .attr("y", headerArea.y_max);
+                        //     //now we need to adjust the actual visual based on the position
+                        //     switch(position) {
+                        //         case "left": bar_area.x_min = headerArea.x_max + margin_between_items;
+                        //                         break;
+                        //         case "right": bar_area.x_max = bar_area.width() - (headerArea.width() + margin_between_items);
+                        //                         break;
+                        //         case "top":  bar_area.y_min = margin_between_items + headerArea.height() + margin_between_items;
+                        //                         break;
+                        //         case "bottom": bar_area.y_max = bar_area.height() - (margin_between_items + headerArea.height());
+                        //                         break;   
+                        //         default:
+                        //             throw new Error("Somehow the position wasn't set to one of the available values (left, right, top, bottom).");
+                        //     }                                        
+                        // }
                         if (this.settings.textSettings.treatBlanksAsZeros == true) {
                             this.overrideBlanksWithValue = 0;
                         }
@@ -10661,6 +10703,39 @@ var powerbi;
                             .style("font-family", this.font_family)
                             .style("fill", fill);
                         return (tmp);
+                    };
+                    databarvisual.prototype.position_category_label = function (position, headerElemWidth, headerElemHeight, area) {
+                        var svgWidth = area.width();
+                        var svgHeight = parseInt(this.svg.style("height"));
+                        var headerTxtArea = new Area(0, headerElemWidth, 0, headerElemHeight);
+                        var headerXPx = null;
+                        var headerYPx = null;
+                        if (position == "left") {
+                            //align the y to be the center in terms of the
+                            headerXPx = 0;
+                            headerTxtArea.y_max = area.y_min + ((area.height() / 2));
+                            headerTxtArea.y_min = headerTxtArea.y_max - headerElemHeight;
+                        }
+                        else if (position == "top") {
+                            //horizontal x needs to be at center
+                            headerTxtArea.x_min = (svgWidth / 2) - (headerElemWidth / 2);
+                            headerTxtArea.x_max = headerTxtArea.x_min + headerElemWidth;
+                        }
+                        else if (position == "right") {
+                            //align the y to be the center in terms of the
+                            headerTxtArea.x_min = svgWidth - headerTxtArea.width();
+                            headerTxtArea.x_max = svgWidth;
+                            headerTxtArea.y_max = (svgHeight / 2) + (headerTxtArea.height() / 4);
+                            headerTxtArea.y_min = headerTxtArea.y_max - headerElemHeight;
+                        }
+                        else if (position == "bottom") {
+                            //horizontal x needs to be at center
+                            headerTxtArea.x_min = (svgWidth / 2) - (headerTxtArea.width() / 2);
+                            headerTxtArea.x_max = headerTxtArea.x_min + headerElemWidth;
+                            headerTxtArea.y_max = svgHeight - 5;
+                            headerTxtArea.y_min = headerTxtArea.y_max - headerElemHeight;
+                        }
+                        return headerTxtArea;
                     };
                     databarvisual.prototype.position_header = function (position, headerElemWidth, headerElemHeight) {
                         var svgWidth = parseInt(this.svg.style("width"));
