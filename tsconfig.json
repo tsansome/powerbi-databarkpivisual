@@ -16,6 +16,7 @@
     "node_modules/powerbi-visuals-utils-formattingutils/lib/index.d.ts",
     "node_modules/powerbi-visuals-utils-tooltiputils/lib/index.d.ts",
     "src/settings.ts",
+    "src/D3Utility.ts",
     "src/databarvisual.ts"
   ]
 }

@@ -1,3 +1,5 @@
+/// <reference path="D3Utility.ts" />
+
 /*
  *  Power BI Visual CLI
  *
@@ -38,14 +40,12 @@ module powerbi.extensibility.visual {
     }
 
     export class Field {
-        public category: string;
         public value: number;
         public format: string;
         public displayName: string;
         public displayUnits: number;
 
-        public constructor(category:string, value: number, format:string, displayName: string, displayUnits? : number) {
-            this.category = category;
+        public constructor(value: number, format:string, displayName: string, displayUnits? : number) {
             this.value = value;
             this.format = format;
             this.displayName = displayName;
@@ -80,22 +80,47 @@ module powerbi.extensibility.visual {
     }
 
     export class BarData {
+        public category: string;
         public value: Field;
         public target: Field;
         public max: Field;
 
         public tooltipsData : Field[];
 
-        public constructor() {
-            this.value = new Field("", null, "", "", 0);
+        public constructor(category?: string) {
+            this.value = new Field(null, "", "", 0);
             this.tooltipsData = [];
             this.target = null;
             this.max = null;
+            this.category = category;
+        }
+
+        public largest() {
+            var base: Field = null;
+            if (this.value != null) base = this.value;
+            if (this.target != null) {
+                if (base == null) {
+                    base = this.target;
+                } else {
+                    if (this.target.value != null && base.value < this.target.value) {
+                        base = this.target;
+                    }
+                }
+            }
+            if (this.max != null) {
+                if (base == null) {
+                    base = this.max;
+                } else {
+                    if (this.max.value != null && base.value < this.max.value) {
+                        base = this.max;
+                    }
+                }
+            }
+            return base;
         }
 
         public gapBetweenValueAndTarget(): Field {
-            var ff = new Field(this.value.category,
-                               this.target.value - this.value.value, 
+            var ff = new Field(this.target.value - this.value.value, 
                                this.value.format,
                                "Gap - " + this.value.displayName + " & " + this.target.displayName)
 
@@ -103,8 +128,7 @@ module powerbi.extensibility.visual {
         }
 
         public gapBetweenValueAndMax(): Field {
-            var ff = new Field(this.value.category,
-                               this.max.value - this.value.value, 
+            var ff = new Field(this.max.value - this.value.value, 
                                this.value.format,
                                "Gap - " + this.value.displayName + " & " + this.max.displayName)
 
@@ -112,24 +136,7 @@ module powerbi.extensibility.visual {
         }
     }
 
-    export class Area {
-        x_min:number;
-        x_max:number;
-        y_min:number;
-        y_max:number;
-        public constructor(x_min, x_max, y_min, y_max) {
-            this.x_min = x_min;
-            this.x_max = x_max;
-            this.y_min = y_min;
-            this.y_max = y_max;
-        }
-        public width(): number {
-            return this.x_max - this.x_min;
-        }
-        public height(): number {
-            return this.y_max - this.y_min;
-        }
-    }
+    
 
     export class StatusColor {
         public barColor: string;
@@ -182,7 +189,7 @@ module powerbi.extensibility.visual {
         //setup the bars
         
         var arrays_of_bars: BarData[] = [];
-        var cats = null;
+        var cats: PrimitiveValue[] = null;
         if (categorical_data.categories == null) {
             arrays_of_bars.push(new BarData());
         } 
@@ -192,7 +199,7 @@ module powerbi.extensibility.visual {
             if (cats.length == 0) {
                 arrays_of_bars.push(new BarData());
             } else {
-                cats.forEach(function() { arrays_of_bars.push(new BarData()); });
+                cats.forEach(function(cate) { arrays_of_bars.push(new BarData(cate.toString())); });
             }
         }
         
@@ -206,8 +213,7 @@ module powerbi.extensibility.visual {
                     value = Number(value_string)
                 }
                 var category = cats != null ? cats[i] : null;
-                arrays_of_bars[i].value = new Field(category,
-                                                    value,
+                arrays_of_bars[i].value = new Field(value,
                                                     valueColumn.source.format,
                                                     valueColumn.source.displayName);
             }
@@ -227,8 +233,7 @@ module powerbi.extensibility.visual {
                 if (targetColumn.values[i] != null) {
                     var target_string = targetColumn.values[i].toString();
                     var category = cats != null ? cats[i] : null;
-                    arrays_of_bars[i].target = new Field(category,
-                                                    Number(target_string),
+                    arrays_of_bars[i].target = new Field(Number(target_string),
                                                     targetColumn.source.format,
                                                     targetColumn.source.displayName);
                 }                
@@ -243,10 +248,9 @@ module powerbi.extensibility.visual {
                 if (maxColumn.values[i] != null) {
                     var max_string = maxColumn.values[i].toString();
                     var category = cats != null ? cats[i] : null;
-                    arrays_of_bars[i].max = new Field(category,
-                                                  Number(max_string),
-                                                  maxColumn.source.format,
-                                                  maxColumn.source.displayName);
+                    arrays_of_bars[i].max = new Field(Number(max_string),
+                                                      maxColumn.source.format,
+                                                      maxColumn.source.displayName);
                 }                
             }
         }
@@ -262,7 +266,7 @@ module powerbi.extensibility.visual {
                         var max_string = tooltipColumn.values[i].toString();
                         max = Number(max_string)
                         var category = cats != null ? cats[i] : null;
-                        arrays_of_bars[i].max = new Field(category,
+                        arrays_of_bars[i].max = new Field(
                                                     max,
                                                     tooltipColumn.source.format,
                                                     tooltipColumn.source.displayName);
@@ -324,25 +328,33 @@ module powerbi.extensibility.visual {
                 
                 if (transform.bars.length > 1) {
                     //okay we need to determine the max
-                    var maxFound: Field = null;
-                    transform.bars.forEach(function(value:BarData, i: number) {
-                        var base = value.value == null || value.value.value == null ? null : value.value;
-                        if (value.target != null && value.target.value != null && base.value < value.target.value) {
-                            base = value.target;
-                        }
-                        if (value.max != null && value.max.value != null && base.value < value.max.value) {
-                            base = value.max;
-                        }
-                        //now compare base to max found
-                        maxFound = maxFound < base ? base : maxFound;
-                    });
+                    var maxFound = transform.bars.map(function(value: BarData) { return value.largest(); })
+                                                 .reduce(function(cV: Field, pV: Field) {
+                                                    return pV.value < cV.value ? cV : pV;
+                                                 });
                     //now we need to draw the max and find the maximum height and width it could be
-                    var cont : any = this.svg;
-                    this.add_text(cont, "sampleText", this.settings.headerSettings.fontSize, 0, maxFound, "#000000");
-                    var max_text_height = cont.select(".sampleText").node().getBBox().height;
-                    var max_text_width = cont.select(".sampleText").node().getBBox().width;
-                    cont.select(".sampleText").remove();             
+                    var max_text_string = maxFound.toString(true, true, this.overrideBlanksWithValue);
+                    var max_text = new Label(this.svg, max_text_string, this.settings.textSettings.fontSize + "px", this.font_family);
+                    var max_text_height = max_text.height();
+                    var max_text_width = max_text.width();
                     
+                    //and now we need to work out the maximum category size
+                    //just need to be careful because the category may not be set
+                    var maxCategory = transform.bars.reduce(function(pV:BarData, cV:BarData) {
+                        if (pV == null && cV == null) return null;
+                        if (pV.category == null && cV.category == null) return null;
+                        if ((pV == null || pV.category == null) && (cV != null && cV.category != null)) return(cV);
+                        if ((cV == null || cV.category == null) && (pV != null && pV.category != null)) return(cV);
+                        return pV.category.length < cV.category.length ? cV : pV;
+                    })
+                    var max_category_height = null;
+                    var max_category_width = null;
+                    if (maxCategory != null) {
+                        var max_category_label = new Label(this.svg, maxCategory.category, this.settings.headerSettings.fontSize + "px", this.font_family);
+                        max_category_height = max_category_label.height();
+                        max_category_width = max_category_label.width();
+                    }
+
                     //now let's handle drawing them
                     //we need to see if we can fit them in the space first
                     var one_visual_height = (max_text_height + this.settings.itemsSettings.minHeight);
@@ -497,29 +509,16 @@ module powerbi.extensibility.visual {
             //attach the data to the visual element so that it can be used in the tooltip
             container.data([data]);
 
-            if (data.value.category != null) {
+            if (data.category != null) {
                 var margin_between_items = this.settings.headerSettings.margin_between;
                 var font_size = this.settings.headerSettings.fontSize;  
 
-                var label = data.value.category;
-
-                var header = container.append("text")
-                            .classed("headerText",true)
-                            .text(label);
-
-                //before we position it we need to draw it
-                header.style("font-size",font_size + "pt")
-                        .style("font-family",this.font_family);
-                
-                var headerElemWidth = header.node().getBBox().width;
-                var headerElemHeight = header.node().getBBox().height;
+                var header = new Label(container, data.category, font_size + "px", this.font_family);
 
                 //now position it taking in the position that was set in settings
                 var position = this.settings.headerSettings.position;
-                var headerArea = this.position_category_label(position, headerElemWidth, headerElemHeight, bar_area);
-                
-                header.attr("x", headerArea.x_min)
-                        .attr("y", headerArea.y_max);
+                var headerArea = this.position_category_label(position, header.width(), header.height(), bar_area);
+                header.paint("headerText", container, headerArea.x_min, headerArea.y_max);
 
                 //now we need to adjust the actual visual based on the position
                 switch(position) {
@@ -536,55 +535,6 @@ module powerbi.extensibility.visual {
                 }     
 
             }
-
-            //handle the header scenario
-            // if (this.settings.headerSettings.show == true) {
-            //     var margin_between_items = this.settings.headerSettings.margin_between;
-
-            //     var label = this.settings.headerSettings.value;
-            //     var font_size = this.settings.headerSettings.fontSize;          
-
-            //     //now do an adjustment to the label shown - primarily for mobile visualisation
-            //     if (this.settings.headerWhenSmallSettings.show == true && this.settings.headerWhenSmallSettings.threshold != null) {
-            //         if (this.settings.headerWhenSmallSettings.threshold > bar_area.width()) {
-            //             label = this.settings.headerWhenSmallSettings.value != null ? this.settings.headerWhenSmallSettings.value : label;
-            //             font_size = this.settings.headerWhenSmallSettings.fontSize != null ? this.settings.headerWhenSmallSettings.fontSize : font_size;
-            //         }
-            //     }
-
-            //     var header = container.append("text")
-            //                 .classed("headerText",true)
-            //                 .text(label);
-
-            //     //before we position it we need to draw it
-            //     header.style("font-size",font_size + "pt")
-            //             .style("font-family",this.font_family);
-                
-            //     var headerElemWidth = header.node().getBBox().width;
-            //     var headerElemHeight = header.node().getBBox().height;
-
-            //     //now position it taking in the position that was set in settings
-            //     var position = this.settings.headerSettings.position;
-            //     var headerArea = this.position_header(position, headerElemWidth, headerElemHeight);
-                
-            //     header.attr("x", headerArea.x_min)
-            //             .attr("y", headerArea.y_max);
-
-            //     //now we need to adjust the actual visual based on the position
-            //     switch(position) {
-            //         case "left": bar_area.x_min = headerArea.x_max + margin_between_items;
-            //                         break;
-            //         case "right": bar_area.x_max = bar_area.width() - (headerArea.width() + margin_between_items);
-            //                         break;
-            //         case "top":  bar_area.y_min = margin_between_items + headerArea.height() + margin_between_items;
-            //                         break;
-            //         case "bottom": bar_area.y_max = bar_area.height() - (margin_between_items + headerArea.height());
-            //                         break;   
-            //         default:
-            //             throw new Error("Somehow the position wasn't set to one of the available values (left, right, top, bottom).");
-            //     }                                        
-
-            // }
 
             if (this.settings.textSettings.treatBlanksAsZeros == true) {
                 this.overrideBlanksWithValue = 0;
@@ -763,7 +713,7 @@ module powerbi.extensibility.visual {
 
         private position_category_label(position, headerElemWidth, headerElemHeight, area: Area) {
             var svgWidth = area.width();
-            var svgHeight = parseInt(this.svg.style("height"));
+            var svgHeight = area.height();
                         
             var headerTxtArea = new Area(0, headerElemWidth, 0, headerElemHeight);
             var headerXPx = null;
