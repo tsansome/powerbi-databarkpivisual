@@ -318,9 +318,41 @@ module powerbi.extensibility.visual.databarKPIB8060E2B144244C5A38807466893C9F5  
             console.log('Visual update', options);
            
             this.canvas_clear();
-            
+
+            var svg_area = new Area(0, parseInt(this.svg.style("width")), 
+                                    0, parseInt(this.svg.style("height")));
+
             var transform = visualTransform(options,this.host);
 
+            //now let's first add the header if they have requested it.
+            if (this.settings.headerSettings.show == true) {
+                var header_svg = this.barsContainerElement.append("g").classed("headerTextG", true);
+                var header_label = new Label(this.barsContainerElement, this.settings.headerSettings.value, this.settings.headerSettings.fontSize + "px", this.font_family);
+                var x = null;
+                var y = null;
+                switch(this.settings.headerSettings.position) {
+                    case "left": svg_area.x_min = header_label.width() + this.settings.headerSettings.margin_between;
+                                 y = (svg_area.height() / 2) - (header_label.height() / 2);
+                                 header_label.paint("headerText", header_svg, 0, y);
+                                 break;
+                    case "top": x = (svg_area.width() / 2) - (header_label.width() / 2);
+                                header_label.paint("headerText", header_svg, x, header_label.height());
+                                svg_area.y_min = header_label.height() + this.settings.headerSettings.margin_between;
+                                break;
+                    case "right": y = (svg_area.height() / 2) - (header_label.height() / 2);
+                                  header_label.paint("headerText", header_svg, svg_area.width() - header_label.width(), y);
+                                  svg_area.x_max = svg_area.x_max - header_label.width() - this.settings.headerSettings.margin_between;
+                                  break;
+                    case "bottom": x = (svg_area.width() / 2) - (header_label.width() / 2);
+                                   header_label.paint("headerText", header_svg, x, svg_area.y_max - header_label.height());
+                                   svg_area.y_max = svg_area.height() - (header_label.height() + this.settings.headerSettings.margin_between);
+                                   break;
+                    default:
+                        throw new Error("Somehow the position wasn't set to one of the available values (left, right, top, bottom).");
+                } 
+            }
+
+            //now add the bars
             if (transform.bars == null) {
                 //print out the error message
             }        
@@ -371,11 +403,9 @@ module powerbi.extensibility.visual.databarKPIB8060E2B144244C5A38807466893C9F5  
                     }
                     
                     //now we're going to either try and squeeze it in or just make it overflow if the minimum does not meet
-                    var svgWidth = parseInt(this.svg.style("width"));
-                    var svgHeight = parseInt(this.svg.style("height"));
                     
-                    var master_height_of_visual = min_height_needed < svgHeight ? svgHeight : min_height_needed;
-                    var master_width_of_visual = min_width_needed < svgWidth ? svgWidth : min_width_needed;
+                    var master_height_of_visual = min_height_needed < svg_area.height() ? svg_area.height() : min_height_needed;
+                    var master_width_of_visual = min_width_needed < svg_area.width() ? svg_area.width() : min_width_needed;
                     
                     if (this.settings.itemsSettings.orientation == "vertical") {
                         master_height_of_visual = (master_height_of_visual - padding_total) / transform.bars.length;
@@ -389,10 +419,10 @@ module powerbi.extensibility.visual.databarKPIB8060E2B144244C5A38807466893C9F5  
                         var x_min = 0;
                         var y_min = 0;
                         if (this.settings.itemsSettings.orientation == "vertical") {
-                            y_min = (this.settings.itemsSettings.padding * i) + (master_height_of_visual * i);
+                            y_min = svg_area.y_min + (this.settings.itemsSettings.padding * i) + (master_height_of_visual * i);
                         } 
                         else {
-                            x_min = (this.settings.itemsSettings.padding * i) + (master_width_of_visual * i);
+                            x_min = svg_area.x_min + (this.settings.itemsSettings.padding * i) + (master_width_of_visual * i);
                         }  
                         //okay now let's start drawing
                         var barElement = this.barsContainerElement.append("g").classed("barVisual", true);
@@ -851,6 +881,9 @@ module powerbi.extensibility.visual.databarKPIB8060E2B144244C5A38807466893C9F5  
 
         private canvas_clear() {
             this.barsContainerElement.selectAll(".barVisual").remove();
+            if (this.settings.headerSettings.show == true) {
+                this.barsContainerElement.selectAll(".headerText").remove();
+            }
         }
 
         private static parseSettings(dataView: DataView): VisualSettings {
