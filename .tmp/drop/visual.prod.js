@@ -9998,6 +9998,7 @@ var powerbi;
                     function VisualSettings() {
                         var _this = _super !== null && _super.apply(this, arguments) || this;
                         _this.itemsSettings = new itemsSettings();
+                        _this.sectionSettings = new sectionSettings();
                         _this.textSettings = new textSettings();
                         _this.colorSettings = new colorSettings();
                         _this.targetLineSettings = new targetLineSettings();
@@ -10019,6 +10020,16 @@ var powerbi;
                     return itemsSettings;
                 }());
                 databarKPIB8060E2B144244C5A38807466893C9F5.itemsSettings = itemsSettings;
+                var sectionSettings = (function () {
+                    function sectionSettings() {
+                        this.position = "left";
+                        this.fontSize = 8;
+                        this.fontColor = "#00000";
+                        this.margin_between = 10;
+                    }
+                    return sectionSettings;
+                }());
+                databarKPIB8060E2B144244C5A38807466893C9F5.sectionSettings = sectionSettings;
                 var textSettings = (function () {
                     function textSettings() {
                         this.position = "below";
@@ -10471,9 +10482,9 @@ var powerbi;
                                 var max_category_height = null;
                                 var max_category_width = null;
                                 if (maxCategory != null) {
-                                    var max_category_label = new databarKPIB8060E2B144244C5A38807466893C9F5.Label(this.svg, maxCategory.category, this.settings.headerSettings.fontSize + "px", this.font_family);
-                                    max_category_height = max_category_label.height();
-                                    max_category_width = max_category_label.width();
+                                    var max_category_label = new databarKPIB8060E2B144244C5A38807466893C9F5.Label(this.svg, maxCategory.category, this.settings.sectionSettings.fontSize + "px", this.font_family);
+                                    max_category_height = max_category_label.height() + 5;
+                                    max_category_width = max_category_label.width() + 5;
                                 }
                                 //now let's handle drawing them
                                 //we need to see if we can fit them in the space first
@@ -10510,8 +10521,47 @@ var powerbi;
                                     else {
                                         x_min = (this.settings.itemsSettings.padding * i) + (master_width_of_visual * i);
                                     }
-                                    var square = new databarKPIB8060E2B144244C5A38807466893C9F5.Area(x_min, x_min + master_width_of_visual, y_min, y_min + master_height_of_visual);
+                                    //okay now let's start drawing
                                     var barElement = this.barsContainerElement.append("g").classed("barVisual", true);
+                                    var square = new databarKPIB8060E2B144244C5A38807466893C9F5.Area(x_min, x_min + master_width_of_visual, y_min, y_min + master_height_of_visual);
+                                    //firstly set up the area that we're going to put the data label on
+                                    //secondly draw the category label and adjust the bar visual
+                                    if (barData.category != null) {
+                                        var category_label = new databarKPIB8060E2B144244C5A38807466893C9F5.Label(barElement, barData.category, this.settings.sectionSettings.fontSize + "px", this.font_family);
+                                        var cat_x = null;
+                                        var cat_y = null;
+                                        //now we need to adjust the actual visual based on the position
+                                        switch (this.settings.sectionSettings.position) {
+                                            case "left":
+                                                cat_y = (square.y_min + (square.height() / 2));
+                                                category_label.paint("categoryText", barElement, square.x_min, cat_y);
+                                                square.x_min = square.x_min + max_category_width + this.settings.sectionSettings.margin_between;
+                                                break;
+                                            case "top":
+                                                cat_x = (square.x_min + (square.width() / 2)) - (max_category_width / 2);
+                                                cat_y = square.y_min + max_category_height;
+                                                category_label.paint("categoryText", barElement, cat_x, cat_y);
+                                                square.y_min = square.y_min + max_category_height + this.settings.sectionSettings.margin_between;
+                                                break;
+                                            case "right":
+                                                cat_x = square.x_max - max_category_width;
+                                                cat_y = (square.y_min + (square.height() / 2));
+                                                category_label.paint("categoryText", barElement, cat_x, cat_y);
+                                                square.x_max = square.x_max - max_category_width - this.settings.sectionSettings.margin_between;
+                                                break;
+                                            case "bottom":
+                                                cat_x = (square.x_min + (square.width() / 2)) - (max_category_width / 2);
+                                                cat_y = square.y_max - max_category_height;
+                                                category_label.paint("categoryText", barElement, cat_x, cat_y);
+                                                square.y_max = square.y_max - max_category_height - this.settings.sectionSettings.margin_between;
+                                                break;
+                                            default:
+                                                throw new Error("Somehow the position wasn't set to one of the available values (left, right, top, bottom).");
+                                        }
+                                        //now color the text based on what the user chose
+                                        barElement.select(".categoryText").style("fill", this.settings.sectionSettings.fontColor);
+                                    }
+                                    //lastly draw the bar visual
                                     this.add_one_data_bar(barElement, square, barData);
                                 }
                             }
@@ -10593,32 +10643,6 @@ var powerbi;
                         var bar_area = area;
                         //attach the data to the visual element so that it can be used in the tooltip
                         container.data([data]);
-                        if (data.category != null) {
-                            var margin_between_items = this.settings.headerSettings.margin_between;
-                            var font_size = this.settings.headerSettings.fontSize;
-                            var header = new databarKPIB8060E2B144244C5A38807466893C9F5.Label(container, data.category, font_size + "px", this.font_family);
-                            //now position it taking in the position that was set in settings
-                            var position = this.settings.headerSettings.position;
-                            var headerArea = this.position_category_label(position, header.width(), header.height(), bar_area);
-                            header.paint("headerText", container, headerArea.x_min, headerArea.y_max);
-                            //now we need to adjust the actual visual based on the position
-                            switch (position) {
-                                case "left":
-                                    bar_area.x_min = headerArea.x_max + margin_between_items;
-                                    break;
-                                case "right":
-                                    bar_area.x_max = bar_area.width() - (headerArea.width() + margin_between_items);
-                                    break;
-                                case "top":
-                                    bar_area.y_min = margin_between_items + headerArea.height() + margin_between_items;
-                                    break;
-                                case "bottom":
-                                    bar_area.y_max = bar_area.height() - (margin_between_items + headerArea.height());
-                                    break;
-                                default:
-                                    throw new Error("Somehow the position wasn't set to one of the available values (left, right, top, bottom).");
-                            }
-                        }
                         if (this.settings.textSettings.treatBlanksAsZeros == true) {
                             this.overrideBlanksWithValue = 0;
                         }

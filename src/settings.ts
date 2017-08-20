@@ -30,6 +30,7 @@ module powerbi.extensibility.visual {
 
     export class VisualSettings extends DataViewObjectsParser {
       public itemsSettings: itemsSettings = new itemsSettings();
+      public sectionSettings: sectionSettings = new sectionSettings();
       public textSettings: textSettings = new textSettings();
       public colorSettings: colorSettings = new colorSettings();
       public targetLineSettings: targetLineSettings = new targetLineSettings();
@@ -43,6 +44,13 @@ module powerbi.extensibility.visual {
       public padding: number = 5;
       public minWidth: number = 20;
       public minHeight: number = 20;
+    }
+
+    export class sectionSettings {
+      public position: string = "left";
+      public fontSize: number = 8;
+      public fontColor: string = "#00000";
+      public margin_between: number = 10;
     }
 
     export class textSettings {

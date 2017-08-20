@@ -72,6 +72,59 @@
                 }
             }
         },
+        "sectionSettings": {
+            "displayName": "Categories",
+            "properties": {
+                "position": {
+                    "displayName": "Position",
+                    "type": {
+                        "enumeration": [
+                            {   "displayName": "Top",
+                                "value": "top",
+                                "displayNameKey": "0" 
+                            },
+                            {   "displayName": "Left",
+                                "value": "left",
+                                "displayNameKey": "1" 
+                            },
+                            {
+                                "displayName": "Right",
+                                "value": "right",
+                                "displayNameKey": "2"
+                            },
+                            {   "displayName": "Bottom",
+                                "value": "bottom",
+                                "displayNameKey": "2" 
+                            }
+                        ]
+                    }
+                },
+                "fontSize": {
+                    "displayName": "Text size",
+                    "type": {
+                        "formatting": {
+                            "fontSize": true   
+                        }
+                    }
+                },
+                "fontColor": {
+                    "displayName": "Font color",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color":true
+                            }
+                        }
+                    }
+                },
+                "margin_between": {
+                    "displayName": "Margin",
+                    "type": {
+                        "numeric": true
+                    }
+                }
+            }
+        },
         "textSettings": {
             "displayName": "Data labels",
             "properties": {
