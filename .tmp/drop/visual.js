@@ -10370,7 +10370,15 @@ var powerbi;
                             arrays_of_bars.push(new BarData());
                         }
                         else {
-                            cats.forEach(function (cate) { arrays_of_bars.push(new BarData(cate.toString())); });
+                            cats.forEach(function (cate, idx) {
+                                //okay let's setup a new bar data 
+                                var bd = new BarData(cate.toString());
+                                //now assign the selection id
+                                bd.selectionId = host.createSelectionIdBuilder()
+                                    .withCategory(categorical_data.categories[0], idx)
+                                    .createSelectionId();
+                                arrays_of_bars.push(bd);
+                            });
                         }
                     }
                     // okay so let's first handle the value
@@ -10382,7 +10390,6 @@ var powerbi;
                                 var value_string = valueColumn.values[i].toString();
                                 value = Number(value_string);
                             }
-                            var category = cats != null ? cats[i] : null;
                             arrays_of_bars[i].value = new Field(value, valueColumn.source.format, valueColumn.source.displayName);
                         }
                     }
@@ -10399,7 +10406,6 @@ var powerbi;
                             var target = null;
                             if (targetColumn.values[i] != null) {
                                 var target_string = targetColumn.values[i].toString();
-                                var category = cats != null ? cats[i] : null;
                                 arrays_of_bars[i].target = new Field(Number(target_string), targetColumn.source.format, targetColumn.source.displayName);
                             }
                         }
@@ -10411,7 +10417,6 @@ var powerbi;
                             var max = null;
                             if (maxColumn.values[i] != null) {
                                 var max_string = maxColumn.values[i].toString();
-                                var category = cats != null ? cats[i] : null;
                                 arrays_of_bars[i].max = new Field(Number(max_string), maxColumn.source.format, maxColumn.source.displayName);
                             }
                         }
@@ -10426,7 +10431,6 @@ var powerbi;
                                 if (tooltipColumn.values[i] != null) {
                                     var max_string = tooltipColumn.values[i].toString();
                                     max = Number(max_string);
-                                    var category = cats != null ? cats[i] : null;
                                     arrays_of_bars[i].max = new Field(max, tooltipColumn.source.format, tooltipColumn.source.displayName);
                                 }
                             }
@@ -10523,9 +10527,30 @@ var powerbi;
                                 //we need to see if we can fit them in the space first
                                 var one_visual_height = (max_text_height + this.settings.itemsSettings.minHeight);
                                 var one_visual_width = (max_text_width * 2);
+                                if (maxCategory != null) {
+                                    switch (this.settings.sectionSettings.position) {
+                                        case "left":
+                                            one_visual_width += max_category_width + this.settings.sectionSettings.margin_between;
+                                            break;
+                                        case "right":
+                                            one_visual_width += max_category_width + this.settings.sectionSettings.margin_between;
+                                            break;
+                                        case "top":
+                                            one_visual_height += max_category_height + this.settings.sectionSettings.margin_between;
+                                            one_visual_width = one_visual_width < max_category_width ? max_category_width : one_visual_width;
+                                            break;
+                                        case "bottom":
+                                            one_visual_height += max_category_height + this.settings.sectionSettings.margin_between;
+                                            one_visual_width = one_visual_width < max_category_width ? max_category_width : one_visual_width;
+                                            break;
+                                        default:
+                                            throw new Error("Somehow the position wasn't set to one of the available values (left, right, top, bottom).");
+                                    }
+                                }
+                                var padding_total = (this.settings.itemsSettings.padding * (transform.bars.length - 1));
+                                //now let's see
                                 var min_height_needed = one_visual_height;
                                 var min_width_needed = one_visual_width;
-                                var padding_total = (this.settings.itemsSettings.padding * (transform.bars.length - 1));
                                 if (this.settings.itemsSettings.orientation == "vertical") {
                                     min_height_needed = (one_visual_height * transform.bars.length) + padding_total;
                                 }
@@ -10589,6 +10614,8 @@ var powerbi;
                                             default:
                                                 throw new Error("Somehow the position wasn't set to one of the available values (left, right, top, bottom).");
                                         }
+                                        //global svg reference for use in the on click for transperency
+                                        barData.global_svg_ref = this.svg;
                                         //now color the text based on what the user chose
                                         barElement.select(".categoryText").style("fill", this.settings.sectionSettings.fontColor);
                                     }
@@ -10809,6 +10836,16 @@ var powerbi;
                                     .style("stroke");
                             }
                         }
+                        var selectionManager = this.selectionManager;
+                        container.on('click', function (d) {
+                            var _this = this;
+                            selectionManager.select(d.selectionId).then(function (ids) {
+                                d.global_svg_ref.selectAll(".pebar")
+                                    .attr("fill-opacity", ids.length > 0 ? 0.2 : 1);
+                                d3.select(_this).select(".pebar").attr("fill-opacity", 1);
+                            });
+                            d3.event.stopPropagation();
+                        });
                         this.tooltipServiceWrapper.addTooltip(container, function (tooltipEvent) { return databarvisual.getToolTipDataForBar(tooltipEvent.data, _this.settings); }, function (tooltipEvent) { return null; });
                     };
                     databarvisual.prototype.add_text = function (element, cssClass, fontSize, yPos, field, fill) {
