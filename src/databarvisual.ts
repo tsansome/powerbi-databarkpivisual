@@ -334,20 +334,20 @@ module powerbi.extensibility.visual {
 
             //now let's first add the header if they have requested it.
             if (this.settings.headerSettings.show == true) {
-                var header_svg = this.barsContainerElement.append("g").classed("headerTextG", true);
-                var header_label = new Label(this.barsContainerElement, this.settings.headerSettings.value, this.settings.headerSettings.fontSize + "px", this.font_family);
+                var header_svg = this.svg.append("g").classed("headerTextG", true);
+                var header_label = new Label(this.svg, this.settings.headerSettings.value, this.settings.headerSettings.fontSize + "px", this.font_family);
                 var x = null;
                 var y = null;
                 switch(this.settings.headerSettings.position) {
                     case "left": svg_area.x_min = header_label.width() + this.settings.headerSettings.margin_between;
-                                 y = (svg_area.height() / 2) - (header_label.height() / 2);
+                                 y = (svg_area.height() / 2) + (header_label.height() / 4);
                                  header_label.paint("headerText", header_svg, 0, y);
                                  break;
                     case "top": x = (svg_area.width() / 2) - (header_label.width() / 2);
                                 header_label.paint("headerText", header_svg, x, header_label.height());
                                 svg_area.y_min = header_label.height() + this.settings.headerSettings.margin_between;
                                 break;
-                    case "right": y = (svg_area.height() / 2) - (header_label.height() / 2);
+                    case "right": y = (svg_area.height() / 2) + (header_label.height() / 4);
                                   header_label.paint("headerText", header_svg, svg_area.width() - header_label.width(), y);
                                   svg_area.x_max = svg_area.x_max - header_label.width() - this.settings.headerSettings.margin_between;
                                   break;
@@ -501,10 +501,10 @@ module powerbi.extensibility.visual {
                 else {
                     //set up the main visual
                     var barData = transform.bars[0];
+
                     var barElement = this.barsContainerElement.append("g").classed("barVisual", true);
-                    var SquareArea = new Area(0, parseInt(this.svg.style("width")), 0, parseInt(this.svg.style("height")));
                     
-                    this.add_one_data_bar(barElement, SquareArea, barData); 
+                    this.add_one_data_bar(barElement, svg_area, barData); 
                 }  
             }
         }
@@ -921,9 +921,7 @@ module powerbi.extensibility.visual {
 
         private canvas_clear() {
             this.barsContainerElement.selectAll(".barVisual").remove();
-            if (this.settings.headerSettings.show == true) {
-                this.barsContainerElement.selectAll(".headerText").remove();
-            }
+            this.svg.selectAll(".headerTextG").remove();
         }
 
         private static parseSettings(dataView: DataView): VisualSettings {
