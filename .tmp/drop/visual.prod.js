@@ -10004,7 +10004,6 @@ var powerbi;
                         _this.targetLineSettings = new targetLineSettings();
                         _this.outerBarSettings = new outerBarSettings();
                         _this.headerSettings = new headerSettings();
-                        _this.headerWhenSmallSettings = new headerWhenSmallSettings();
                         return _this;
                     }
                     return VisualSettings;
@@ -10088,16 +10087,6 @@ var powerbi;
                     return headerSettings;
                 }());
                 databarKPIB8060E2B144244C5A38807466893C9F5.headerSettings = headerSettings;
-                var headerWhenSmallSettings = (function () {
-                    function headerWhenSmallSettings() {
-                        this.show = false;
-                        this.threshold = 100;
-                        this.fontSize = 12;
-                        this.value = "";
-                    }
-                    return headerWhenSmallSettings;
-                }());
-                databarKPIB8060E2B144244C5A38807466893C9F5.headerWhenSmallSettings = headerWhenSmallSettings;
             })(databarKPIB8060E2B144244C5A38807466893C9F5 = visual.databarKPIB8060E2B144244C5A38807466893C9F5 || (visual.databarKPIB8060E2B144244C5A38807466893C9F5 = {}));
         })(visual = extensibility.visual || (extensibility.visual = {}));
     })(extensibility = powerbi.extensibility || (powerbi.extensibility = {}));

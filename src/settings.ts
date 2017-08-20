@@ -36,7 +36,6 @@ module powerbi.extensibility.visual {
       public targetLineSettings: targetLineSettings = new targetLineSettings();
       public outerBarSettings: outerBarSettings = new outerBarSettings();
       public headerSettings: headerSettings = new headerSettings();
-      public headerWhenSmallSettings: headerWhenSmallSettings = new headerWhenSmallSettings();
     }
 
     export class itemsSettings {
@@ -94,13 +93,6 @@ module powerbi.extensibility.visual {
         public value:string = "";
         public fontSize: number = 18;
         public margin_between: number = 5;
-    }
-
-    export class headerWhenSmallSettings {
-        public show:boolean = false;
-        public threshold: number = 100;
-        public fontSize: number = 12;
-        public value: string = "";        
     }
 
 }
