@@ -10477,7 +10477,7 @@ var powerbi;
                                     break;
                                 case "bottom":
                                     x = (svg_area.width() / 2) - (header_label.width() / 2);
-                                    header_label.paint("headerText", header_svg, x, svg_area.y_max - header_label.height());
+                                    header_label.paint("headerText", header_svg, x, svg_area.y_max - 5); //5 for padding
                                     svg_area.y_max = svg_area.height() - (header_label.height() + this.settings.headerSettings.margin_between);
                                     break;
                                 default:
@@ -10544,8 +10544,8 @@ var powerbi;
                                 //now do the others with padding
                                 for (var i = 0; i < transform.bars.length; i++) {
                                     var barData = transform.bars[i];
-                                    var x_min = 0;
-                                    var y_min = 0;
+                                    var x_min = svg_area.x_min;
+                                    var y_min = svg_area.y_min;
                                     if (this.settings.itemsSettings.orientation == "vertical") {
                                         y_min = svg_area.y_min + (this.settings.itemsSettings.padding * i) + (master_height_of_visual * i);
                                     }
