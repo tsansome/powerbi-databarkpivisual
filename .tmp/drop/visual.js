@@ -10442,6 +10442,7 @@ var powerbi;
                         this.canvas_setup();
                     }
                     databarvisual.prototype.update = function (options) {
+                        var _this = this;
                         this.settings = databarvisual.parseSettings(options && options.dataViews && options.dataViews[0]);
                         console.log('Visual update', options);
                         this.canvas_clear();
@@ -10628,6 +10629,8 @@ var powerbi;
                             barData.status_message = e.message;
                             var barElement = this.barsContainerElement.append("g").classed("barVisual", true);
                             this.add_one_data_bar(barElement, svg_area, barData);
+                            //now add the tooltip error message 
+                            this.tooltipServiceWrapper.addTooltip(barElement, function (tooltipEvent) { return databarvisual.getToolTipDataError(tooltipEvent.data, _this.settings); }, function (tooltipEvent) { return null; });
                         }
                     };
                     databarvisual.getToolTipDataError = function (dataNonCasted, settings) {
@@ -10704,152 +10707,172 @@ var powerbi;
                         var bar_area = area;
                         //attach the data to the visual element so that it can be used in the tooltip
                         container.data([data]);
-                        if (this.settings.textSettings.treatBlanksAsZeros == true) {
-                            this.overrideBlanksWithValue = 0;
+                        //now we need to check if all values are blank we just need to show a blank bar
+                        if ((data.value == null || data.value.value == null) && (data.target == null || data.target.value == null) && (data.max == null || data.max.value == null)) {
+                            //okay set up the blank label
+                            var text_y_location_2 = bar_area.y_max;
+                            var label = new databarKPIB8060E2B144244C5A38807466893C9F5.Label(container, "blank", this.settings.textSettings.fontSize + "px", this.font_family);
+                            label.paint("valueTxt", container, bar_area.x_min + 3, text_y_location_2);
+                            bar_area.y_max = (bar_area.y_max - margin_between_bar_and_text) - label.height();
+                            //now draw the bar
+                            var mainBarFill_2 = this.settings.colorSettings.defaultColorNoTargetFill;
+                            container.select(".mabar")
+                                .attr("width", bar_area.width())
+                                .attr("fill", mainBarFill_2)
+                                .attr("stroke", this.settings.outerBarSettings.outlineColor)
+                                .attr("height", bar_area.height())
+                                .attr("x", bar_area.x_min)
+                                .attr("y", bar_area.y_min);
                         }
                         else {
-                            this.overrideBlanksWithValue = null;
-                        }
-                        //add the display units from settings
-                        var tS = this.settings.textSettings;
-                        data.value.displayUnits = tS.displayUnitsForValue != 0 ? tS.displayUnitsForValue : tS.displayUnits;
-                        if (data.max != null) {
-                            data.max.displayUnits = tS.displayUnitsForMax != 0 ? tS.displayUnitsForMax : tS.displayUnits;
-                        }
-                        for (var i = 0; i < data.tooltipsData.length; i++) {
-                            data.tooltipsData[i].displayUnits = this.settings.textSettings.displayUnits;
-                        }
-                        var position_percent_bar_in_percent = 0;
-                        var position_dashed_line_in_percent = 0;
-                        //first we need to determine how much to fill the bar and where the dashed
-                        //line should be positioned
-                        if (data.target == null) {
-                            position_dashed_line_in_percent = 0;
-                            position_percent_bar_in_percent = data.max == null ? 0 : (data.value.value / data.max.value) * 100;
-                        }
-                        else {
-                            if (data.max == null) {
-                                // so we have a target and a value but no max   
-                                position_percent_bar_in_percent = (data.value.value / (data.target.value * 2)) * 100;
-                                position_dashed_line_in_percent = 50;
+                            //now we can draw the actual visual
+                            if (this.settings.textSettings.treatBlanksAsZeros == true) {
+                                this.overrideBlanksWithValue = 0;
                             }
                             else {
-                                //we have a target and a max
-                                position_percent_bar_in_percent = (data.value.value / data.max.value) * 100;
-                                position_dashed_line_in_percent = (data.target.value / data.max.value) * 100;
+                                this.overrideBlanksWithValue = null;
                             }
-                        }
-                        //we need to derive the status bar color
-                        var stColor = this.derive_status_color(data.value, data.target, data.max);
-                        var margin_between_bar_and_text = 2;
-                        if (this.settings.textSettings.position != "onbar") {
-                            var text_y_location = null;
-                            switch (this.settings.textSettings.position) {
-                                case "below":
-                                    text_y_location = bar_area.y_max - margin_between_bar_and_text;
-                                    break;
+                            //add the display units from settings
+                            var tS = this.settings.textSettings;
+                            data.value.displayUnits = tS.displayUnitsForValue != 0 ? tS.displayUnitsForValue : tS.displayUnits;
+                            if (data.max != null) {
+                                data.max.displayUnits = tS.displayUnitsForMax != 0 ? tS.displayUnitsForMax : tS.displayUnits;
                             }
-                            if (this.settings.textSettings.showValueText == true) {
-                                //get the formatted value string
-                                this.add_text(container, "valueTxt", this.settings.textSettings.fontSize, text_y_location, data.value, stColor.barColor)
-                                    .attr("x", bar_area.x_min + 3);
+                            for (var i = 0; i < data.tooltipsData.length; i++) {
+                                data.tooltipsData[i].displayUnits = this.settings.textSettings.displayUnits;
                             }
-                            if (data.max != null && this.settings.textSettings.showMaxText == true) {
-                                this.add_text(container, "goalTxt", this.settings.textSettings.fontSize, text_y_location, data.max, "#000000")
-                                    .attr("x", bar_area.x_max - container.select(".goalTxt").node().getBBox().width);
+                            var position_percent_bar_in_percent = 0;
+                            var position_dashed_line_in_percent = 0;
+                            //first we need to determine how much to fill the bar and where the dashed
+                            //line should be positioned
+                            if (data.target == null) {
+                                position_dashed_line_in_percent = 0;
+                                position_percent_bar_in_percent = data.max == null ? 0 : (data.value.value / data.max.value) * 100;
                             }
-                            //now do the bar placement 
-                            //derive the bar attributes using the overall text height
-                            var goal_txt_height = this.settings.textSettings.showMaxText == false || data.max == null ? 0 : container.select(".goalTxt").node().getBBox().height;
-                            var value_txt_height = this.settings.textSettings.showValueText == false || data.value == null ? 0 : container.select(".valueTxt").node().getBBox().height;
-                            var max_txt_height = goal_txt_height > value_txt_height ? goal_txt_height : value_txt_height;
-                            switch (this.settings.textSettings.position) {
-                                case "below":
-                                    bar_area.y_max = (bar_area.y_max - margin_between_bar_and_text) - max_txt_height;
-                                    break;
+                            else {
+                                if (data.max == null) {
+                                    // so we have a target and a value but no max   
+                                    position_percent_bar_in_percent = (data.value.value / (data.target.value * 2)) * 100;
+                                    position_dashed_line_in_percent = 50;
+                                }
+                                else {
+                                    //we have a target and a max
+                                    position_percent_bar_in_percent = (data.value.value / data.max.value) * 100;
+                                    position_dashed_line_in_percent = (data.target.value / data.max.value) * 100;
+                                }
                             }
-                        }
-                        //okay now make the dashed line area and readjust the bar's area
-                        var dashed_line_area = new databarKPIB8060E2B144244C5A38807466893C9F5.Area(bar_area.x_min, bar_area.x_max, bar_area.y_min, bar_area.y_max);
-                        var margin = (dashed_line_area.height() * 0.15);
-                        bar_area.y_min += margin;
-                        bar_area.y_max -= margin;
-                        if (data.target == null && data.max == null) {
-                            //just draw the main bar as we just want to show the value     
-                            container.append("rect")
-                                .classed("mabar", true);
-                        }
-                        else {
-                            // draw the complete visual
-                            container.append("rect")
-                                .classed("mabar", true);
-                            container.append("rect")
-                                .classed("pebar", true)
-                                .attr("x", bar_area.x_min)
-                                .attr("y", bar_area.y_min)
+                            //we need to derive the status bar color
+                            var stColor = this.derive_status_color(data.value, data.target, data.max);
+                            var margin_between_bar_and_text = 2;
+                            if (this.settings.textSettings.position != "onbar") {
+                                var text_y_location = null;
+                                switch (this.settings.textSettings.position) {
+                                    case "below":
+                                        text_y_location = bar_area.y_max - margin_between_bar_and_text;
+                                        break;
+                                }
+                                if (this.settings.textSettings.showValueText == true) {
+                                    //get the formatted value string
+                                    this.add_text(container, "valueTxt", this.settings.textSettings.fontSize, text_y_location, data.value, stColor.barColor)
+                                        .attr("x", bar_area.x_min + 3);
+                                }
+                                if (data.max != null && this.settings.textSettings.showMaxText == true) {
+                                    this.add_text(container, "goalTxt", this.settings.textSettings.fontSize, text_y_location, data.max, "#000000")
+                                        .attr("x", bar_area.x_max - container.select(".goalTxt").node().getBBox().width);
+                                }
+                                //now do the bar placement 
+                                //derive the bar attributes using the overall text height
+                                var goal_txt_height = this.settings.textSettings.showMaxText == false || data.max == null ? 0 : container.select(".goalTxt").node().getBBox().height;
+                                var value_txt_height = this.settings.textSettings.showValueText == false || data.value == null ? 0 : container.select(".valueTxt").node().getBBox().height;
+                                var max_txt_height = goal_txt_height > value_txt_height ? goal_txt_height : value_txt_height;
+                                switch (this.settings.textSettings.position) {
+                                    case "below":
+                                        bar_area.y_max = (bar_area.y_max - margin_between_bar_and_text) - max_txt_height;
+                                        break;
+                                }
+                            }
+                            //okay now make the dashed line area and readjust the bar's area
+                            var dashed_line_area = new databarKPIB8060E2B144244C5A38807466893C9F5.Area(bar_area.x_min, bar_area.x_max, bar_area.y_min, bar_area.y_max);
+                            var margin = (dashed_line_area.height() * 0.15);
+                            bar_area.y_min += margin;
+                            bar_area.y_max -= margin;
+                            if (data.target == null && data.max == null) {
+                                //just draw the main bar as we just want to show the value     
+                                container.append("rect")
+                                    .classed("mabar", true);
+                            }
+                            else {
+                                // draw the complete visual
+                                container.append("rect")
+                                    .classed("mabar", true);
+                                container.append("rect")
+                                    .classed("pebar", true)
+                                    .attr("x", bar_area.x_min)
+                                    .attr("y", bar_area.y_min)
+                                    .attr("height", bar_area.height())
+                                    .attr("fill", stColor.barColor)
+                                    .attr("width", bar_area.width() * (position_percent_bar_in_percent / 100));
+                            }
+                            var mainBarFill = null;
+                            if ((data.target == null && data.max == null) && this.settings.outerBarSettings.fillWhenNoTarget) {
+                                mainBarFill = this.settings.colorSettings.defaultColorNoTargetFill;
+                            }
+                            else {
+                                mainBarFill = this.settings.outerBarSettings.fill;
+                            }
+                            //add the extra styling to the main outer bar
+                            container.select(".mabar")
+                                .attr("width", bar_area.width())
+                                .attr("fill", mainBarFill)
+                                .attr("stroke", this.settings.outerBarSettings.outlineColor)
                                 .attr("height", bar_area.height())
-                                .attr("fill", stColor.barColor)
-                                .attr("width", bar_area.width() * (position_percent_bar_in_percent / 100));
-                        }
-                        var mainBarFill = null;
-                        if ((data.target == null && data.max == null) && this.settings.outerBarSettings.fillWhenNoTarget) {
-                            mainBarFill = this.settings.colorSettings.defaultColorNoTargetFill;
-                        }
-                        else {
-                            mainBarFill = this.settings.outerBarSettings.fill;
-                        }
-                        //add the extra styling to the main outer bar
-                        container.select(".mabar")
-                            .attr("width", bar_area.width())
-                            .attr("fill", mainBarFill)
-                            .attr("stroke", this.settings.outerBarSettings.outlineColor)
-                            .attr("height", bar_area.height())
-                            .attr("x", bar_area.x_min)
-                            .attr("y", bar_area.y_min);
-                        // now if a target was specified we need to draw the dashed line
-                        if (data.target != null) {
-                            //determine where the dashed line should end
-                            var x = bar_area.x_min + (bar_area.width() * (position_dashed_line_in_percent / 100));
-                            container.append("line")
-                                .classed("tline", true)
-                                .attr("y1", dashed_line_area.y_min)
-                                .attr("x1", x)
-                                .attr("x2", x)
-                                .attr("y2", dashed_line_area.y_max)
-                                .style("stroke", this.settings.targetLineSettings.color)
-                                .style("stroke-width", this.settings.targetLineSettings.strokeWidth);
-                            if (this.settings.targetLineSettings.lineStyle == "dashed") {
-                                container.select(".tline").style("stroke-dasharray", "2,2");
+                                .attr("x", bar_area.x_min)
+                                .attr("y", bar_area.y_min);
+                            // now if a target was specified we need to draw the dashed line
+                            if (data.target != null) {
+                                //determine where the dashed line should end
+                                var x = bar_area.x_min + (bar_area.width() * (position_dashed_line_in_percent / 100));
+                                container.append("line")
+                                    .classed("tline", true)
+                                    .attr("y1", dashed_line_area.y_min)
+                                    .attr("x1", x)
+                                    .attr("x2", x)
+                                    .attr("y2", dashed_line_area.y_max)
+                                    .style("stroke", this.settings.targetLineSettings.color)
+                                    .style("stroke-width", this.settings.targetLineSettings.strokeWidth);
+                                if (this.settings.targetLineSettings.lineStyle == "dashed") {
+                                    container.select(".tline").style("stroke-dasharray", "2,2");
+                                }
                             }
-                        }
-                        //if the data labels were set to onbar we draw them last
-                        if (this.settings.textSettings.position == "onbar") {
-                            if (this.settings.textSettings.showValueText == true) {
-                                var yOffset = (bar_area.y_min + (bar_area.height() / 2));
-                                //get the formatted value string
-                                this.add_text(container, "valueTxt", this.settings.textSettings.fontSize, 0, data.value, "#000000")
-                                    .attr("x", bar_area.x_min + 3)
-                                    .attr("y", yOffset + (container.select(".valueTxt").node().getBBox().height / 4));
+                            //if the data labels were set to onbar we draw them last
+                            if (this.settings.textSettings.position == "onbar") {
+                                if (this.settings.textSettings.showValueText == true) {
+                                    var yOffset = (bar_area.y_min + (bar_area.height() / 2));
+                                    //get the formatted value string
+                                    this.add_text(container, "valueTxt", this.settings.textSettings.fontSize, 0, data.value, "#000000")
+                                        .attr("x", bar_area.x_min + 3)
+                                        .attr("y", yOffset + (container.select(".valueTxt").node().getBBox().height / 4));
+                                }
+                                if (data.max != null && this.settings.textSettings.showMaxText == true) {
+                                    var yOffSet = (bar_area.y_min + (bar_area.height() / 2));
+                                    this.add_text(container, "goalTxt", this.settings.textSettings.fontSize, 0, data.max, "#000000")
+                                        .attr("x", bar_area.x_max - container.select(".goalTxt").node().getBBox().width)
+                                        .attr("y", yOffSet + (container.select(".goalTxt").node().getBBox().height / 4))
+                                        .style("stroke");
+                                }
                             }
-                            if (data.max != null && this.settings.textSettings.showMaxText == true) {
-                                var yOffSet = (bar_area.y_min + (bar_area.height() / 2));
-                                this.add_text(container, "goalTxt", this.settings.textSettings.fontSize, 0, data.max, "#000000")
-                                    .attr("x", bar_area.x_max - container.select(".goalTxt").node().getBBox().width)
-                                    .attr("y", yOffSet + (container.select(".goalTxt").node().getBBox().height / 4))
-                                    .style("stroke");
-                            }
-                        }
-                        var selectionManager = this.selectionManager;
-                        container.on('click', function (d) {
-                            var _this = this;
-                            selectionManager.select(d.selectionId).then(function (ids) {
-                                d.global_svg_ref.selectAll(".pebar")
-                                    .attr("fill-opacity", ids.length > 0 ? 0.2 : 1);
-                                d3.select(_this).select(".pebar").attr("fill-opacity", 1);
+                            var selectionManager_1 = this.selectionManager;
+                            container.on('click', function (d) {
+                                var _this = this;
+                                selectionManager_1.select(d.selectionId).then(function (ids) {
+                                    d.global_svg_ref.selectAll(".pebar")
+                                        .attr("fill-opacity", ids.length > 0 ? 0.2 : 1);
+                                    d3.select(_this).select(".pebar").attr("fill-opacity", 1);
+                                });
+                                d3.event.stopPropagation();
                             });
-                            d3.event.stopPropagation();
-                        });
-                        this.tooltipServiceWrapper.addTooltip(container, function (tooltipEvent) { return databarvisual.getToolTipDataForBar(tooltipEvent.data, _this.settings); }, function (tooltipEvent) { return null; });
+                            this.tooltipServiceWrapper.addTooltip(container, function (tooltipEvent) { return databarvisual.getToolTipDataForBar(tooltipEvent.data, _this.settings); }, function (tooltipEvent) { return null; });
+                        }
                     };
                     databarvisual.prototype.add_text = function (element, cssClass, fontSize, yPos, field, fill) {
                         var tmp = element.append("text")
@@ -10994,8 +11017,8 @@ var powerbi;
     (function (visuals) {
         var plugins;
         (function (plugins) {
-            plugins.databarKPIB8060E2B144244C5A38807466893C9F5 = {
-                name: 'databarKPIB8060E2B144244C5A38807466893C9F5',
+            plugins.databarKPIB8060E2B144244C5A38807466893C9F5_DEBUG = {
+                name: 'databarKPIB8060E2B144244C5A38807466893C9F5_DEBUG',
                 displayName: 'Data bar KPI',
                 class: 'databarvisual',
                 version: '1.0.0',
