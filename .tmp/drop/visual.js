@@ -10264,6 +10264,7 @@ var powerbi;
                         this.target = null;
                         this.max = null;
                         this.category = category;
+                        this.status_message = null;
                     }
                     BarData.prototype.largest = function () {
                         var base = null;
@@ -10445,180 +10446,194 @@ var powerbi;
                         console.log('Visual update', options);
                         this.canvas_clear();
                         var svg_area = new databarKPIB8060E2B144244C5A38807466893C9F5.Area(0, parseInt(this.svg.style("width")), 0, parseInt(this.svg.style("height")));
-                        var transform = visualTransform(options, this.host);
-                        //now let's first add the header if they have requested it.
-                        if (this.settings.headerSettings.show == true) {
-                            var header_svg = this.svg.append("g").classed("headerTextG", true);
-                            var header_label = new databarKPIB8060E2B144244C5A38807466893C9F5.Label(this.svg, this.settings.headerSettings.value, this.settings.headerSettings.fontSize + "px", this.font_family);
-                            var x = null;
-                            var y = null;
-                            switch (this.settings.headerSettings.position) {
-                                case "left":
-                                    svg_area.x_min = header_label.width() + this.settings.headerSettings.margin_between;
-                                    y = (svg_area.height() / 2) + (header_label.height() / 4);
-                                    header_label.paint("headerText", header_svg, 0, y);
-                                    break;
-                                case "top":
-                                    x = (svg_area.width() / 2) - (header_label.width() / 2);
-                                    header_label.paint("headerText", header_svg, x, header_label.height());
-                                    svg_area.y_min = header_label.height() + this.settings.headerSettings.margin_between;
-                                    break;
-                                case "right":
-                                    y = (svg_area.height() / 2) + (header_label.height() / 4);
-                                    header_label.paint("headerText", header_svg, svg_area.width() - header_label.width(), y);
-                                    svg_area.x_max = svg_area.x_max - header_label.width() - this.settings.headerSettings.margin_between;
-                                    break;
-                                case "bottom":
-                                    x = (svg_area.width() / 2) - (header_label.width() / 2);
-                                    header_label.paint("headerText", header_svg, x, svg_area.y_max - 5); //5 for padding
-                                    svg_area.y_max = svg_area.height() - (header_label.height() + this.settings.headerSettings.margin_between);
-                                    break;
-                                default:
-                                    throw new Error("Somehow the position wasn't set to one of the available values (left, right, top, bottom).");
+                        try {
+                            var transform = visualTransform(options, this.host);
+                            //now let's first add the header if they have requested it.
+                            if (this.settings.headerSettings.show == true) {
+                                var header_svg = this.svg.append("g").classed("headerTextG", true);
+                                var header_label = new databarKPIB8060E2B144244C5A38807466893C9F5.Label(this.svg, this.settings.headerSettings.value, this.settings.headerSettings.fontSize + "px", this.font_family);
+                                var x = null;
+                                var y = null;
+                                switch (this.settings.headerSettings.position) {
+                                    case "left":
+                                        svg_area.x_min = header_label.width() + this.settings.headerSettings.margin_between;
+                                        y = (svg_area.height() / 2) + (header_label.height() / 4);
+                                        header_label.paint("headerText", header_svg, 0, y);
+                                        break;
+                                    case "top":
+                                        x = (svg_area.width() / 2) - (header_label.width() / 2);
+                                        header_label.paint("headerText", header_svg, x, header_label.height());
+                                        svg_area.y_min = header_label.height() + this.settings.headerSettings.margin_between;
+                                        break;
+                                    case "right":
+                                        y = (svg_area.height() / 2) + (header_label.height() / 4);
+                                        header_label.paint("headerText", header_svg, svg_area.width() - header_label.width(), y);
+                                        svg_area.x_max = svg_area.x_max - header_label.width() - this.settings.headerSettings.margin_between;
+                                        break;
+                                    case "bottom":
+                                        x = (svg_area.width() / 2) - (header_label.width() / 2);
+                                        header_label.paint("headerText", header_svg, x, svg_area.y_max - 5); //5 for padding
+                                        svg_area.y_max = svg_area.height() - (header_label.height() + this.settings.headerSettings.margin_between);
+                                        break;
+                                    default:
+                                        throw new Error("Somehow the position wasn't set to one of the available values (left, right, top, bottom).");
+                                }
                             }
-                        }
-                        //now add the bars
-                        if (transform.bars == null) {
-                        }
-                        else {
-                            if (transform.bars.length > 1) {
-                                //okay we need to determine the max
-                                var maxFound = transform.bars.map(function (value) { return value.largest(); })
-                                    .reduce(function (cV, pV) {
-                                    return pV.value < cV.value ? cV : pV;
-                                });
-                                //now we need to draw the max and find the maximum height and width it could be
-                                var max_text_string = maxFound.toString(true, true, this.overrideBlanksWithValue);
-                                var max_text = new databarKPIB8060E2B144244C5A38807466893C9F5.Label(this.svg, max_text_string, this.settings.textSettings.fontSize + "px", this.font_family);
-                                var max_text_height = max_text.height();
-                                var max_text_width = max_text.width();
-                                //and now we need to work out the maximum category size
-                                //just need to be careful because the category may not be set
-                                var maxCategory = transform.bars.reduce(function (pV, cV) {
-                                    if (pV == null && cV == null)
-                                        return null;
-                                    if (pV.category == null && cV.category == null)
-                                        return null;
-                                    if ((pV == null || pV.category == null) && (cV != null && cV.category != null))
-                                        return (cV);
-                                    if ((cV == null || cV.category == null) && (pV != null && pV.category != null))
-                                        return (cV);
-                                    return pV.category.length < cV.category.length ? cV : pV;
-                                });
-                                var max_category_height = null;
-                                var max_category_width = null;
-                                if (maxCategory != null) {
-                                    var max_category_label = new databarKPIB8060E2B144244C5A38807466893C9F5.Label(this.svg, maxCategory.category, this.settings.sectionSettings.fontSize + "px", this.font_family);
-                                    max_category_height = max_category_label.height() + 5;
-                                    max_category_width = max_category_label.width() + 5;
-                                }
-                                //now let's handle drawing them
-                                //we need to see if we can fit them in the space first
-                                var one_visual_height = (max_text_height + this.settings.itemsSettings.minHeight);
-                                var one_visual_width = (max_text_width * 2);
-                                if (maxCategory != null) {
-                                    switch (this.settings.sectionSettings.position) {
-                                        case "left":
-                                            one_visual_width += max_category_width + this.settings.sectionSettings.margin_between;
-                                            break;
-                                        case "right":
-                                            one_visual_width += max_category_width + this.settings.sectionSettings.margin_between;
-                                            break;
-                                        case "top":
-                                            one_visual_height += max_category_height + this.settings.sectionSettings.margin_between;
-                                            one_visual_width = one_visual_width < max_category_width ? max_category_width : one_visual_width;
-                                            break;
-                                        case "bottom":
-                                            one_visual_height += max_category_height + this.settings.sectionSettings.margin_between;
-                                            one_visual_width = one_visual_width < max_category_width ? max_category_width : one_visual_width;
-                                            break;
-                                        default:
-                                            throw new Error("Somehow the position wasn't set to one of the available values (left, right, top, bottom).");
+                            //now add the bars
+                            if (transform.bars == null) {
+                            }
+                            else {
+                                if (transform.bars.length > 1) {
+                                    //okay we need to determine the max
+                                    var maxFound = transform.bars.map(function (value) { return value.largest(); })
+                                        .reduce(function (cV, pV) {
+                                        return pV.value < cV.value ? cV : pV;
+                                    });
+                                    //now we need to draw the max and find the maximum height and width it could be
+                                    var max_text_string = maxFound.toString(true, true, this.overrideBlanksWithValue);
+                                    var max_text = new databarKPIB8060E2B144244C5A38807466893C9F5.Label(this.svg, max_text_string, this.settings.textSettings.fontSize + "px", this.font_family);
+                                    var max_text_height = max_text.height();
+                                    var max_text_width = max_text.width();
+                                    //and now we need to work out the maximum category size
+                                    //just need to be careful because the category may not be set
+                                    var maxCategory = transform.bars.reduce(function (pV, cV) {
+                                        if (pV == null && cV == null)
+                                            return null;
+                                        if (pV.category == null && cV.category == null)
+                                            return null;
+                                        if ((pV == null || pV.category == null) && (cV != null && cV.category != null))
+                                            return (cV);
+                                        if ((cV == null || cV.category == null) && (pV != null && pV.category != null))
+                                            return (cV);
+                                        return pV.category.length < cV.category.length ? cV : pV;
+                                    });
+                                    var max_category_height = null;
+                                    var max_category_width = null;
+                                    if (maxCategory != null) {
+                                        var max_category_label = new databarKPIB8060E2B144244C5A38807466893C9F5.Label(this.svg, maxCategory.category, this.settings.sectionSettings.fontSize + "px", this.font_family);
+                                        max_category_height = max_category_label.height() + 5;
+                                        max_category_width = max_category_label.width() + 5;
                                     }
-                                }
-                                var padding_total = (this.settings.itemsSettings.padding * (transform.bars.length - 1));
-                                //now let's see
-                                var min_height_needed = one_visual_height;
-                                var min_width_needed = one_visual_width;
-                                if (this.settings.itemsSettings.orientation == "vertical") {
-                                    min_height_needed = (one_visual_height * transform.bars.length) + padding_total;
-                                }
-                                else {
-                                    min_width_needed = (one_visual_width * transform.bars.length) + padding_total;
-                                }
-                                //now we're going to either try and squeeze it in or just make it overflow if the minimum does not meet
-                                var master_height_of_visual = min_height_needed < svg_area.height() ? svg_area.height() : min_height_needed;
-                                var master_width_of_visual = min_width_needed < svg_area.width() ? svg_area.width() : min_width_needed;
-                                if (this.settings.itemsSettings.orientation == "vertical") {
-                                    master_height_of_visual = (master_height_of_visual - padding_total) / transform.bars.length;
-                                }
-                                else {
-                                    master_width_of_visual = (master_width_of_visual - padding_total) / transform.bars.length;
-                                }
-                                //now do the others with padding
-                                for (var i = 0; i < transform.bars.length; i++) {
-                                    var barData = transform.bars[i];
-                                    var x_min = svg_area.x_min;
-                                    var y_min = svg_area.y_min;
-                                    if (this.settings.itemsSettings.orientation == "vertical") {
-                                        y_min = svg_area.y_min + (this.settings.itemsSettings.padding * i) + (master_height_of_visual * i);
-                                    }
-                                    else {
-                                        x_min = svg_area.x_min + (this.settings.itemsSettings.padding * i) + (master_width_of_visual * i);
-                                    }
-                                    //okay now let's start drawing
-                                    var barElement = this.barsContainerElement.append("g").classed("barVisual", true);
-                                    var square = new databarKPIB8060E2B144244C5A38807466893C9F5.Area(x_min, x_min + master_width_of_visual, y_min, y_min + master_height_of_visual);
-                                    //firstly set up the area that we're going to put the data label on
-                                    //secondly draw the category label and adjust the bar visual
-                                    if (barData.category != null) {
-                                        var category_label = new databarKPIB8060E2B144244C5A38807466893C9F5.Label(barElement, barData.category, this.settings.sectionSettings.fontSize + "px", this.font_family);
-                                        var cat_x = null;
-                                        var cat_y = null;
-                                        //now we need to adjust the actual visual based on the position
+                                    //now let's handle drawing them
+                                    //we need to see if we can fit them in the space first
+                                    var one_visual_height = (max_text_height + this.settings.itemsSettings.minHeight);
+                                    var one_visual_width = (max_text_width * 2);
+                                    if (maxCategory != null) {
                                         switch (this.settings.sectionSettings.position) {
                                             case "left":
-                                                cat_y = (square.y_min + (square.height() / 2));
-                                                category_label.paint("categoryText", barElement, square.x_min, cat_y);
-                                                square.x_min = square.x_min + max_category_width + this.settings.sectionSettings.margin_between;
-                                                break;
-                                            case "top":
-                                                cat_x = (square.x_min + (square.width() / 2)) - (max_category_width / 2);
-                                                cat_y = square.y_min + max_category_height;
-                                                category_label.paint("categoryText", barElement, cat_x, cat_y);
-                                                square.y_min = square.y_min + max_category_height + this.settings.sectionSettings.margin_between;
+                                                one_visual_width += max_category_width + this.settings.sectionSettings.margin_between;
                                                 break;
                                             case "right":
-                                                cat_x = square.x_max - max_category_width;
-                                                cat_y = (square.y_min + (square.height() / 2));
-                                                category_label.paint("categoryText", barElement, cat_x, cat_y);
-                                                square.x_max = square.x_max - max_category_width - this.settings.sectionSettings.margin_between;
+                                                one_visual_width += max_category_width + this.settings.sectionSettings.margin_between;
+                                                break;
+                                            case "top":
+                                                one_visual_height += max_category_height + this.settings.sectionSettings.margin_between;
+                                                one_visual_width = one_visual_width < max_category_width ? max_category_width : one_visual_width;
                                                 break;
                                             case "bottom":
-                                                cat_x = (square.x_min + (square.width() / 2)) - (max_category_width / 2);
-                                                cat_y = square.y_max - max_category_height;
-                                                category_label.paint("categoryText", barElement, cat_x, cat_y);
-                                                square.y_max = square.y_max - max_category_height - this.settings.sectionSettings.margin_between;
+                                                one_visual_height += max_category_height + this.settings.sectionSettings.margin_between;
+                                                one_visual_width = one_visual_width < max_category_width ? max_category_width : one_visual_width;
                                                 break;
                                             default:
                                                 throw new Error("Somehow the position wasn't set to one of the available values (left, right, top, bottom).");
                                         }
-                                        //global svg reference for use in the on click for transperency
-                                        barData.global_svg_ref = this.svg;
-                                        //now color the text based on what the user chose
-                                        barElement.select(".categoryText").style("fill", this.settings.sectionSettings.fontColor);
                                     }
-                                    //lastly draw the bar visual
-                                    this.add_one_data_bar(barElement, square, barData);
+                                    var padding_total = (this.settings.itemsSettings.padding * (transform.bars.length - 1));
+                                    //now let's see
+                                    var min_height_needed = one_visual_height;
+                                    var min_width_needed = one_visual_width;
+                                    if (this.settings.itemsSettings.orientation == "vertical") {
+                                        min_height_needed = (one_visual_height * transform.bars.length) + padding_total;
+                                    }
+                                    else {
+                                        min_width_needed = (one_visual_width * transform.bars.length) + padding_total;
+                                    }
+                                    //now we're going to either try and squeeze it in or just make it overflow if the minimum does not meet
+                                    var master_height_of_visual = min_height_needed < svg_area.height() ? svg_area.height() : min_height_needed;
+                                    var master_width_of_visual = min_width_needed < svg_area.width() ? svg_area.width() : min_width_needed;
+                                    if (this.settings.itemsSettings.orientation == "vertical") {
+                                        master_height_of_visual = (master_height_of_visual - padding_total) / transform.bars.length;
+                                    }
+                                    else {
+                                        master_width_of_visual = (master_width_of_visual - padding_total) / transform.bars.length;
+                                    }
+                                    //now do the others with padding
+                                    for (var i = 0; i < transform.bars.length; i++) {
+                                        var barData = transform.bars[i];
+                                        var x_min = svg_area.x_min;
+                                        var y_min = svg_area.y_min;
+                                        if (this.settings.itemsSettings.orientation == "vertical") {
+                                            y_min = svg_area.y_min + (this.settings.itemsSettings.padding * i) + (master_height_of_visual * i);
+                                        }
+                                        else {
+                                            x_min = svg_area.x_min + (this.settings.itemsSettings.padding * i) + (master_width_of_visual * i);
+                                        }
+                                        //okay now let's start drawing
+                                        var barElement = this.barsContainerElement.append("g").classed("barVisual", true);
+                                        var square = new databarKPIB8060E2B144244C5A38807466893C9F5.Area(x_min, x_min + master_width_of_visual, y_min, y_min + master_height_of_visual);
+                                        //firstly set up the area that we're going to put the data label on
+                                        //secondly draw the category label and adjust the bar visual
+                                        if (barData.category != null) {
+                                            var category_label = new databarKPIB8060E2B144244C5A38807466893C9F5.Label(barElement, barData.category, this.settings.sectionSettings.fontSize + "px", this.font_family);
+                                            var cat_x = null;
+                                            var cat_y = null;
+                                            //now we need to adjust the actual visual based on the position
+                                            switch (this.settings.sectionSettings.position) {
+                                                case "left":
+                                                    cat_y = (square.y_min + (square.height() / 2));
+                                                    category_label.paint("categoryText", barElement, square.x_min, cat_y);
+                                                    square.x_min = square.x_min + max_category_width + this.settings.sectionSettings.margin_between;
+                                                    break;
+                                                case "top":
+                                                    cat_x = (square.x_min + (square.width() / 2)) - (max_category_width / 2);
+                                                    cat_y = square.y_min + max_category_height;
+                                                    category_label.paint("categoryText", barElement, cat_x, cat_y);
+                                                    square.y_min = square.y_min + max_category_height + this.settings.sectionSettings.margin_between;
+                                                    break;
+                                                case "right":
+                                                    cat_x = square.x_max - max_category_width;
+                                                    cat_y = (square.y_min + (square.height() / 2));
+                                                    category_label.paint("categoryText", barElement, cat_x, cat_y);
+                                                    square.x_max = square.x_max - max_category_width - this.settings.sectionSettings.margin_between;
+                                                    break;
+                                                case "bottom":
+                                                    cat_x = (square.x_min + (square.width() / 2)) - (max_category_width / 2);
+                                                    cat_y = square.y_max - max_category_height;
+                                                    category_label.paint("categoryText", barElement, cat_x, cat_y);
+                                                    square.y_max = square.y_max - max_category_height - this.settings.sectionSettings.margin_between;
+                                                    break;
+                                                default:
+                                                    throw new Error("Somehow the position wasn't set to one of the available values (left, right, top, bottom).");
+                                            }
+                                            //global svg reference for use in the on click for transperency
+                                            barData.global_svg_ref = this.svg;
+                                            //now color the text based on what the user chose
+                                            barElement.select(".categoryText").style("fill", this.settings.sectionSettings.fontColor);
+                                        }
+                                        //lastly draw the bar visual
+                                        this.add_one_data_bar(barElement, square, barData);
+                                    }
+                                }
+                                else {
+                                    //set up the main visual
+                                    var barData = transform.bars[0];
+                                    var barElement = this.barsContainerElement.append("g").classed("barVisual", true);
+                                    this.add_one_data_bar(barElement, svg_area, barData);
                                 }
                             }
-                            else {
-                                //set up the main visual
-                                var barData = transform.bars[0];
-                                var barElement = this.barsContainerElement.append("g").classed("barVisual", true);
-                                this.add_one_data_bar(barElement, svg_area, barData);
-                            }
                         }
+                        catch (e) {
+                            //in the circumstance of an error just draw a blank one
+                            var barData = new BarData();
+                            barData.status_message = e.message;
+                            var barElement = this.barsContainerElement.append("g").classed("barVisual", true);
+                            this.add_one_data_bar(barElement, svg_area, barData);
+                        }
+                    };
+                    databarvisual.getToolTipDataError = function (dataNonCasted, settings) {
+                        var data = dataNonCasted;
+                        var tooltipDataFieldList = [{ displayName: "status", value: data.status_message }];
+                        return tooltipDataFieldList;
                     };
                     databarvisual.getToolTipDataForBar = function (dataNonCasted, settings) {
                         var useDisplayUnits = !settings.textSettings.ignoreFormattingForTooltips;
@@ -10979,8 +10994,8 @@ var powerbi;
     (function (visuals) {
         var plugins;
         (function (plugins) {
-            plugins.databarKPIB8060E2B144244C5A38807466893C9F5_DEBUG = {
-                name: 'databarKPIB8060E2B144244C5A38807466893C9F5_DEBUG',
+            plugins.databarKPIB8060E2B144244C5A38807466893C9F5 = {
+                name: 'databarKPIB8060E2B144244C5A38807466893C9F5',
                 displayName: 'Data bar KPI',
                 class: 'databarvisual',
                 version: '1.0.0',
