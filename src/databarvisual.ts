@@ -936,6 +936,10 @@ module powerbi.extensibility.visual {
                     stColor.barColor = this.settings.colorSettings.lessThanColor;
                     stColor.fontColor = this.settings.colorSettings.lessThanColor;
                 }
+                else {
+                    stColor.barColor = statusBarColor;
+                    stColor.fontColor = textColor;
+                }
             } else {
                 if (max != null) {
                     if (value.value > max.value) {
@@ -945,6 +949,10 @@ module powerbi.extensibility.visual {
                     else if (value.value < max.value) {
                         stColor.barColor = this.settings.colorSettings.lessThanColor;
                         stColor.fontColor = this.settings.colorSettings.lessThanColor;
+                    }
+                    else {
+                        stColor.barColor = statusBarColor;
+                        stColor.fontColor = textColor;
                     }
                 }
             }
