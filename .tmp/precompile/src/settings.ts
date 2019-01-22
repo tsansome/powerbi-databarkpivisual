@@ -24,7 +24,7 @@
  *  THE SOFTWARE.
  */
 
-module powerbi.extensibility.visual.databarKPIB8060E2B144244C5A38807466893C9F5  {
+module powerbi.extensibility.visual.databarKPIB8060E2B144244C5A38807466893C9F6  {
     "use strict";
     import DataViewObjectsParser = powerbi.extensibility.utils.dataview.DataViewObjectsParser;
 

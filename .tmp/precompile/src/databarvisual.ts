@@ -26,7 +26,7 @@
  *  THE SOFTWARE.
  */
 
-module powerbi.extensibility.visual.databarKPIB8060E2B144244C5A38807466893C9F5  {
+module powerbi.extensibility.visual.databarKPIB8060E2B144244C5A38807466893C9F6  {
     "use strict";
 
     import tooltip = powerbi.extensibility.utils.tooltip;
@@ -195,7 +195,6 @@ module powerbi.extensibility.visual.databarKPIB8060E2B144244C5A38807466893C9F5  
 
         //collect the data
         //setup the bars
-        
         var arrays_of_bars: BarData[] = [];
         var cats: PrimitiveValue[] = null;
         if (categorical_data.categories == null) {
@@ -507,10 +506,43 @@ module powerbi.extensibility.visual.databarKPIB8060E2B144244C5A38807466893C9F5  
                     else {
                         //set up the main visual
                         var barData = transform.bars[0];
-    
+
                         var barElement = this.barsContainerElement.append("g").classed("barVisual", true);
                         
-                        this.add_one_data_bar(barElement, svg_area, barData); 
+                        var square = svg_area;
+                        if (barData.category != null) {
+                            var category_label = new Label(barElement, barData.category, this.settings.sectionSettings.fontSize + "px", this.font_family);
+                            var cat_x = null;
+                            var cat_y = null;
+                            //now we need to adjust the actual visual based on the position
+                            switch(this.settings.sectionSettings.position) {
+                                case "left": cat_y = (square.y_min + (square.height() / 2));
+                                                category_label.paint("categoryText", barElement, square.x_min, cat_y);
+                                                square.x_min = square.x_min + category_label.width() + this.settings.sectionSettings.margin_between;
+                                                break;
+                                case "top": cat_x = (square.x_min + (square.width() / 2)) - (category_label.width() / 2);
+                                            cat_y = square.y_min + category_label.height();
+                                            category_label.paint("categoryText", barElement, cat_x, cat_y);
+                                            square.y_min = square.y_min + category_label.height() + this.settings.sectionSettings.margin_between;
+                                            break;
+                                case "right": cat_x = square.x_max - category_label.width();
+                                                cat_y = (square.y_min + (square.height() / 2));
+                                                category_label.paint("categoryText", barElement, cat_x, cat_y);
+                                                square.x_max = square.x_max - category_label.width() - this.settings.sectionSettings.margin_between;
+                                                break;
+                                case "bottom": cat_x = (square.x_min + (square.width() / 2)) - (category_label.width() / 2);
+                                                cat_y = square.y_max - category_label.height();
+                                                category_label.paint("categoryText", barElement, cat_x, cat_y);
+                                                square.y_max = square.y_max - category_label.height() - this.settings.sectionSettings.margin_between;
+                                                break;
+                                default:
+                                    throw new Error("Somehow the position wasn't set to one of the available values (left, right, top, bottom).");
+                            }
+                            //now color the text based on what the user chose
+                            barElement.select(".categoryText").style("fill", this.settings.sectionSettings.fontColor);
+                        }
+
+                        this.add_one_data_bar(barElement, square, barData); 
                     }  
                 }
             }
@@ -805,7 +837,7 @@ module powerbi.extensibility.visual.databarKPIB8060E2B144244C5A38807466893C9F5  
                             .style("stroke")
                     }
                 }
-                
+
                 let selectionManager = this.selectionManager;
     
                 container.on('click', function(d : BarData) {
@@ -838,95 +870,16 @@ module powerbi.extensibility.visual.databarKPIB8060E2B144244C5A38807466893C9F5  
             return(tmp)
         }
 
-        private position_category_label(position, headerElemWidth, headerElemHeight, area: Area) {
-            var svgWidth = area.width();
-            var svgHeight = area.height();
-                        
-            var headerTxtArea = new Area(0, headerElemWidth, 0, headerElemHeight);
-            var headerXPx = null;
-            var headerYPx = null;
-            if (position == "left") {                        
-                //align the y to be the center in terms of the
-                headerXPx = 0;
-                headerTxtArea.y_max = area.y_min + ((area.height() / 2));
-                headerTxtArea.y_min = headerTxtArea.y_max - headerElemHeight;
-                //only need to set x_min for the square area
-                                     
-            } else if (position == "top") {
-                //horizontal x needs to be at center
-                headerTxtArea.x_min = (svgWidth / 2) - (headerElemWidth / 2)
-                headerTxtArea.x_max = headerTxtArea.x_min + headerElemWidth;
-                //only need to set y_min for the square area
-                
-            } else if (position == "right") {
-                //align the y to be the center in terms of the
-                headerTxtArea.x_min = svgWidth - headerTxtArea.width();
-                headerTxtArea.x_max = svgWidth;
-                headerTxtArea.y_max = (svgHeight / 2) + (headerTxtArea.height() / 4);
-                headerTxtArea.y_min = headerTxtArea.y_max - headerElemHeight;
-                //now we need to set x_max for the square area
-                
-            }
-            else if (position == "bottom") {
-                //horizontal x needs to be at center
-                headerTxtArea.x_min = (svgWidth / 2) - (headerTxtArea.width() / 2);
-                headerTxtArea.x_max = headerTxtArea.x_min + headerElemWidth;
-                headerTxtArea.y_max = svgHeight - 5;
-                headerTxtArea.y_min = headerTxtArea.y_max - headerElemHeight;
-                //only need to set y_min for the square
-                
-            }
-
-            return headerTxtArea;
-        }
-
-        private position_header(position, headerElemWidth, headerElemHeight) : Area {                       
-            var svgWidth = parseInt(this.svg.style("width"));
-            var svgHeight = parseInt(this.svg.style("height"));
-                        
-            var headerTxtArea = new Area(0, headerElemWidth, 0, headerElemHeight);
-            var headerXPx = null;
-            var headerYPx = null;
-            if (position == "left") {                        
-                //align the y to be the center in terms of the
-                headerXPx = 0;
-                headerTxtArea.y_max = (svgHeight / 2) + (headerElemHeight / 4);
-                headerTxtArea.y_min = headerTxtArea.y_max - headerElemHeight;
-                //only need to set x_min for the square area
-                                     
-            } else if (position == "top") {
-                //horizontal x needs to be at center
-                headerTxtArea.x_min = (svgWidth / 2) - (headerElemWidth / 2)
-                headerTxtArea.x_max = headerTxtArea.x_min + headerElemWidth;
-                //only need to set y_min for the square area
-                
-            } else if (position == "right") {
-                //align the y to be the center in terms of the
-                headerTxtArea.x_min = svgWidth - headerTxtArea.width();
-                headerTxtArea.x_max = svgWidth;
-                headerTxtArea.y_max = (svgHeight / 2) + (headerTxtArea.height() / 4);
-                headerTxtArea.y_min = headerTxtArea.y_max - headerElemHeight;
-                //now we need to set x_max for the square area
-                
-            }
-            else if (position == "bottom") {
-                //horizontal x needs to be at center
-                headerTxtArea.x_min = (svgWidth / 2) - (headerTxtArea.width() / 2);
-                headerTxtArea.x_max = headerTxtArea.x_min + headerElemWidth;
-                headerTxtArea.y_max = svgHeight - 5;
-                headerTxtArea.y_min = headerTxtArea.y_max - headerElemHeight;
-                //only need to set y_min for the square
-                
-            }
-
-            return headerTxtArea;
-        }
-
         private derive_status_color(value, target?, max?): StatusColor {
             var stColor = new StatusColor();
-            var statusBarColor = this.settings.colorSettings.equalToColor;
-            var textColor = this.settings.colorSettings.equalToColor;
             
+            if (value.value == null || value.value == undefined) {
+                return {
+                    barColor: this.settings.colorSettings.defaultColorNoTargetFill,
+                    fontColor: this.settings.colorSettings.defaultColorNoTargetText
+                }
+            }
+
             if (target != null) {
                 if (value.value > target.value) {
                     stColor.barColor = this.settings.colorSettings.greaterThanColor;
@@ -935,6 +888,10 @@ module powerbi.extensibility.visual.databarKPIB8060E2B144244C5A38807466893C9F5  
                 else if (value.value < target.value) {
                     stColor.barColor = this.settings.colorSettings.lessThanColor;
                     stColor.fontColor = this.settings.colorSettings.lessThanColor;
+                }
+                else {
+                    stColor.barColor = this.settings.colorSettings.equalToColor;
+                    stColor.fontColor = this.settings.colorSettings.equalToColor;
                 }
             } else {
                 if (max != null) {
@@ -945,6 +902,10 @@ module powerbi.extensibility.visual.databarKPIB8060E2B144244C5A38807466893C9F5  
                     else if (value.value < max.value) {
                         stColor.barColor = this.settings.colorSettings.lessThanColor;
                         stColor.fontColor = this.settings.colorSettings.lessThanColor;
+                    }
+                    else {
+                        stColor.barColor = this.settings.colorSettings.equalToColor;
+                        stColor.fontColor = this.settings.colorSettings.equalToColor;
                     }
                 }
             }

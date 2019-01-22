@@ -1,4 +1,4 @@
-.visual-databarKPIB8060E2B144244C5A38807466893C9F5_DEBUG {
+.visual-databarKPIB8060E2B144244C5A38807466893C9F6_DEBUG {
   /*
  *  Power BI Visualizations
  *
@@ -25,17 +25,17 @@
  *  THE SOFTWARE.
  */
 }
-.visual-databarKPIB8060E2B144244C5A38807466893C9F5_DEBUG .overflowingText {
+.visual-databarKPIB8060E2B144244C5A38807466893C9F6_DEBUG .overflowingText {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
   display: block;
 }
-.visual-databarKPIB8060E2B144244C5A38807466893C9F5_DEBUG p {
+.visual-databarKPIB8060E2B144244C5A38807466893C9F6_DEBUG p {
   font-size: 20px;
   font-weight: bold;
 }
-.visual-databarKPIB8060E2B144244C5A38807466893C9F5_DEBUG p em {
+.visual-databarKPIB8060E2B144244C5A38807466893C9F6_DEBUG p em {
   background: yellow;
   padding: 5px;
 }
