@@ -1,34 +1,25 @@
 {
-  "visual": {
-    "name": "databarvisual",
-    "displayName": "Data bar KPI",
-    "guid": "databarKPIB8060E2B144244C5A38807466893C9F6",
-    "visualClassName": "databarvisual",
-    "version": "1.1.1",
-    "description": "A slim KPI visual which indicates the progress towards the target with a slim bar that is coloured. Designed to take the smallest amount of report space possible. You can fit it just into two boxes inside a Power BI Mobile report",
-    "supportUrl": "http://community.powerbi.com",
-    "gitHubUrl": "https://github.com/tsansome/powerbi-databarkpivisual/"
-  },
-  "apiVersion": "1.7.0",
-  "author": {
-    "name": "Travis Sansome",
-    "email": "travis.sansome@gmail.com"
-  },
-  "assets": {
-    "icon": "assets/icon.png"
-  },
-  "externalJS": [
-    "node_modules/d3/d3.min.js",
-    "node_modules/globalize/lib/globalize.js",
-    "node_modules/globalize/lib/cultures/globalize.culture.en-US.js",
-    "node_modules/powerbi-visuals-utils-typeutils/lib/index.js",
-    "node_modules/powerbi-visuals-utils-svgutils/lib/index.js",
-    "node_modules/powerbi-visuals-utils-dataviewutils/lib/index.js",
-    "node_modules/powerbi-visuals-utils-formattingutils/lib/index.js",
-    "node_modules/powerbi-visuals-utils-tooltiputils/lib/index.js"
-  ],
-  "style": "style/visual.less",
-  "capabilities": "capabilities.json",
-  "dependencies": "dependencies.json",
-  "stringResources": []
+    "visual": {
+        "name": "databarkpivisual",
+        "displayName": "Data bar KPI",
+        "guid": "databarkpivisualC7D9C5D48D2D42568087C64CA96ABF88",
+        "visualClassName": "Visual",
+        "version": "2.0.0",
+        "description": "A slim KPI visual which indicates the progress towards the target with a slim bar that is coloured. Designed to take the smallest amount of report space possible. You can fit it just into two boxes inside a Power BI Mobile report",
+        "supportUrl": "http://community.powerbi.com",
+        "gitHubUrl": "https://github.com/tsansome/powerbi-databarkpivisual/"
+    },
+    "apiVersion": "2.6.0",
+    "author": {
+        "name": "Travis Sansome",
+        "email": "travis.sansome@gmail.com"
+    },
+    "assets": {
+        "icon": "assets/icon.png"
+    },
+    "externalJS": null,
+    "style": "style/visual.less",
+    "capabilities": "capabilities.json",
+    "dependencies": null,
+    "stringResources": []
 }

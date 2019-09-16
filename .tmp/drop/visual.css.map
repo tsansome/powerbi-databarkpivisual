@@ -1,1 +1,1 @@
-{"version":3,"sources":["input","node_modules/powerbi-visuals-utils-formattingutils/lib/index.css"],"names":[],"mappings":"AAAA,kDCyBA,kBACE,eAAA,CACA,kBAAA,CACA,sBAAA,CACA,cD7BF,kDAEA,GACI,cAAA,CACA,iBAJJ,kDAEA,EAGI,IACI,iBAAA,CACA"}
+{"version":3,"sources":["webpack://databarkpivisualC7D9C5D48D2D42568087C64CA96ABF88/./style/visual.less"],"names":[],"mappings":"AAAA;AACA;AACA;AACA;AACA;AACA;AACA;AACA","file":"visual.css","sourcesContent":["p {\n  font-size: 20px;\n  font-weight: bold;\n}\np em {\n  background: yellow;\n  padding: 5px;\n}\n"],"sourceRoot":""}

@@ -24,75 +24,75 @@
  *  THE SOFTWARE.
  */
 
-module powerbi.extensibility.visual {
-    "use strict";
-    import DataViewObjectsParser = powerbi.extensibility.utils.dataview.DataViewObjectsParser;
+"use strict";
 
-    export class VisualSettings extends DataViewObjectsParser {
-      public itemsSettings: itemsSettings = new itemsSettings();
-      public sectionSettings: sectionSettings = new sectionSettings();
-      public textSettings: textSettings = new textSettings();
-      public colorSettings: colorSettings = new colorSettings();
-      public targetLineSettings: targetLineSettings = new targetLineSettings();
-      public outerBarSettings: outerBarSettings = new outerBarSettings();
-      public headerSettings: headerSettings = new headerSettings();
-    }
+import { dataViewObjectsParser } from "powerbi-visuals-utils-dataviewutils";
+import DataViewObjectsParser = dataViewObjectsParser.DataViewObjectsParser;
 
-    export class itemsSettings {
-      public orientation: string = "vertical";
-      public padding: number = 5;
-      public minWidth: number = 20;
-      public minHeight: number = 20;
-    }
-
-    export class sectionSettings {
-      public position: string = "left";
-      public fontSize: number = 8;
-      public fontColor: string = "#00000";
-      public margin_between: number = 10;
-    }
-
-    export class textSettings {
-      public position: string = "below";
-     // Text Size
-      public fontSize: number = 12;
-      public displayUnits: number = 0;      
-      public showValueText: boolean = true;
-      public displayUnitsForValue: number = 0;
-      public showMaxText: boolean = true;
-      public displayUnitsForMax: number = 0;
-      public repPositiveGapAsNegativeNumber: boolean = true;
-      public showPercentagesOnGaps: boolean = true;
-      public ignoreFormattingForTooltips: boolean = false;
-      public treatBlanksAsZeros: boolean = false;
-    }
-
-    export class colorSettings {
-      public defaultColorNoTargetText: string = "#00000";
-      public defaultColorNoTargetFill: string = "#000000";      
-      public lessThanColor: string = "#f44336";
-      public equalToColor: string = "#4caf50";
-      public greaterThanColor: string = "#4caf50";
-    }
-
-    export class targetLineSettings {
-      public color: string = "grey";
-      public strokeWidth: number = 1;
-      public lineStyle: string = "dashed";
-    }
-
-    export class outerBarSettings {
-      public fillWhenNoTarget: boolean = true;
-      public fill: string = "white";
-      public outlineColor: string = "grey";
-    }
-
-    export class headerSettings {
-        public show:boolean = false;
-        public position:string = "left";
-        public value:string = "";
-        public fontSize: number = 18;
-        public margin_between: number = 5;
-    }
-
+export class VisualSettings extends DataViewObjectsParser {
+  public itemsSettings: ItemsSettings = new ItemsSettings();
+  public sectionSettings: SectionSettings = new SectionSettings();
+  public textSettings: TextSettings = new TextSettings();
+  public colorSettings: ColorSettings = new ColorSettings();
+  public targetLineSettings: TargetLineSettings = new TargetLineSettings();
+  public outerBarSettings: OuterBarSettings = new OuterBarSettings();
+  public headerSettings: HeaderSettings = new HeaderSettings();
 }
+
+export class ItemsSettings {
+  public orientation: string = "vertical";
+  public padding: number = 5;
+  public minWidth: number = 20;
+  public minHeight: number = 20;
+}
+
+export class SectionSettings {
+  public position: string = "left";
+  public fontSize: number = 8;
+  public fontColor: string = "#00000";
+  public margin_between: number = 10;
+}
+
+export class TextSettings {
+  public position: string = "below";
+  // Text Size
+  public fontSize: number = 12;
+  public displayUnits: number = 0;
+  public showValueText: boolean = true;
+  public displayUnitsForValue: number = 0;
+  public showMaxText: boolean = true;
+  public displayUnitsForMax: number = 0;
+  public repPositiveGapAsNegativeNumber: boolean = true;
+  public showPercentagesOnGaps: boolean = true;
+  public ignoreFormattingForTooltips: boolean = false;
+  public treatBlanksAsZeros: boolean = false;
+}
+
+export class ColorSettings {
+  public defaultColorNoTargetText: string = "#00000";
+  public defaultColorNoTargetFill: string = "#000000";
+  public lessThanColor: string = "#f44336";
+  public equalToColor: string = "#4caf50";
+  public greaterThanColor: string = "#4caf50";
+}
+
+export class TargetLineSettings {
+  public color: string = "grey";
+  public strokeWidth: number = 1;
+  public lineStyle: string = "dashed";
+}
+
+export class OuterBarSettings {
+  public fillWhenNoTarget: boolean = true;
+  public fill: string = "white";
+  public outlineColor: string = "grey";
+}
+
+export class HeaderSettings {
+  public show: boolean = false;
+  public position: string = "left";
+  public value: string = "";
+  public fontSize: number = 18;
+  public margin_between: number = 5;
+}
+
