@@ -2,7 +2,7 @@
     "visual": {
         "name": "databarkpivisual",
         "displayName": "Data bar KPI",
-        "guid": "databarkpivisualC7D9C5D48D2D42568087C64CA96ABF88",
+        "guid": "databarKPIB8060E2B144244C5A38807466893C9F6",
         "visualClassName": "Visual",
         "version": "2.0.0",
         "description": "A slim KPI visual which indicates the progress towards the target with a slim bar that is coloured. Designed to take the smallest amount of report space possible. You can fit it just into two boxes inside a Power BI Mobile report",

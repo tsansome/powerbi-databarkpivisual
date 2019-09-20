@@ -1,5 +1,5 @@
 import { Visual } from "../../src/visual";
-declare var databarkpivisualC7D9C5D48D2D42568087C64CA96ABF88: {
+declare var databarKPIB8060E2B144244C5A38807466893C9F6: {
     name: string;
     displayName: string;
     class: string;
@@ -8,4 +8,4 @@ declare var databarkpivisualC7D9C5D48D2D42568087C64CA96ABF88: {
     create: (options: any) => Visual;
     custom: boolean;
 };
-export default databarkpivisualC7D9C5D48D2D42568087C64CA96ABF88;
+export default databarKPIB8060E2B144244C5A38807466893C9F6;

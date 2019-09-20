@@ -2,8 +2,8 @@ import { Visual } from "../../src/visual";
 var powerbiKey = "powerbi";
 var powerbi = window[powerbiKey];
 
-var databarkpivisualC7D9C5D48D2D42568087C64CA96ABF88 = {
-    name: 'databarkpivisualC7D9C5D48D2D42568087C64CA96ABF88',
+var databarKPIB8060E2B144244C5A38807466893C9F6 = {
+    name: 'databarKPIB8060E2B144244C5A38807466893C9F6',
     displayName: 'Data bar KPI',
     class: 'Visual',
     version: '2.0.0',
@@ -21,7 +21,7 @@ var databarkpivisualC7D9C5D48D2D42568087C64CA96ABF88 = {
 if (typeof powerbi !== "undefined") {
     powerbi.visuals = powerbi.visuals || {};
     powerbi.visuals.plugins = powerbi.visuals.plugins || {};
-    powerbi.visuals.plugins["databarkpivisualC7D9C5D48D2D42568087C64CA96ABF88"] = databarkpivisualC7D9C5D48D2D42568087C64CA96ABF88;
+    powerbi.visuals.plugins["databarKPIB8060E2B144244C5A38807466893C9F6"] = databarKPIB8060E2B144244C5A38807466893C9F6;
 }
 
-export default databarkpivisualC7D9C5D48D2D42568087C64CA96ABF88;
+export default databarKPIB8060E2B144244C5A38807466893C9F6;
