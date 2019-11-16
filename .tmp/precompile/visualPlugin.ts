@@ -1,14 +1,16 @@
 import { Visual } from "../../src/visual";
-var powerbiKey = "powerbi";
-var powerbi = window[powerbiKey];
+import powerbiVisualsApi from "powerbi-visuals-api"
+import IVisualPlugin = powerbiVisualsApi.visuals.plugins.IVisualPlugin
+import VisualConstructorOptions = powerbiVisualsApi.extensibility.visual.VisualConstructorOptions
+var powerbiKey: any = "powerbi";
+var powerbi: any = window[powerbiKey];
 
-var databarKPIB8060E2B144244C5A38807466893C9F6 = {
+var databarKPIB8060E2B144244C5A38807466893C9F6: IVisualPlugin = {
     name: 'databarKPIB8060E2B144244C5A38807466893C9F6',
     displayName: 'Data bar KPI',
     class: 'Visual',
-    version: '2.0.0',
     apiVersion: '2.6.0',
-    create: (options) => {
+    create: (options: VisualConstructorOptions) => {
         if (Visual) {
             return new Visual(options);
         }
