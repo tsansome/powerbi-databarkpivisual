@@ -1,5 +1,5 @@
 {
-    "version": "2.0.0",
+    "version": "3.0.0",
     "author": {"name":"Travis Sansome","email":"travis.sansome@gmail.com"},
     "resources": [
         {
@@ -8,7 +8,7 @@
             "file": "resources/databarKPIB8060E2B144244C5A38807466893C9F6.pbiviz.json"
         }
     ],
-    "visual": {"name":"databarkpivisual","displayName":"Data bar KPI","guid":"databarKPIB8060E2B144244C5A38807466893C9F6","visualClassName":"Visual","version":"2.0.0","description":"A slim KPI visual which indicates the progress towards the target with a slim bar that is coloured. Designed to take the smallest amount of report space possible. You can fit it just into two boxes inside a Power BI Mobile report","supportUrl":"http://community.powerbi.com","gitHubUrl":"https://github.com/tsansome/powerbi-databarkpivisual/"},
+    "visual": {"name":"databarkpivisual","displayName":"Data bar KPI","guid":"databarKPIB8060E2B144244C5A38807466893C9F6","visualClassName":"Visual","version":"3.0.0","description":"A slim KPI visual which indicates the progress towards the target with a slim bar that is coloured. Designed to take the smallest amount of report space possible. You can fit it just into two boxes inside a Power BI Mobile report","supportUrl":"http://community.powerbi.com","gitHubUrl":"https://github.com/tsansome/powerbi-databarkpivisual/"},
     "metadata": {
         "pbivizjson": {
             "resourceId": "rId0"
