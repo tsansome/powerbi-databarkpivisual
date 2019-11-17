@@ -2,4 +2,5 @@
 # ignore packages installed in node_modules
 node_modules/
 
-.tmp
+# ignore tmp from build
+.tmp/
